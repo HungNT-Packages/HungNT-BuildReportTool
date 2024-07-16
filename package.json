@@ -1,0 +1,10 @@
+{
+  "name": "com.hungnt.buildreporttool",
+  "version": "1.0.0",
+  "displayName": "HungNT: Build Report Tool",
+  "unity": "2021.1",
+  "author": {
+    "name": "Nguyen Tien Hung",
+    "email": "ngtienhungg.work@gmail.com"
+  }
+}
