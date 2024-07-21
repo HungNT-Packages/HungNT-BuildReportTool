@@ -1,19 +1,19 @@
 using UnityEngine;
 
-
 namespace BuildReportTool.Window.Screen
 {
 	public abstract class BaseScreen
 	{
 		public abstract string Name { get; }
 
-		public abstract void RefreshData(BuildInfo buildReport, AssetDependencies assetDependencies, TextureData textureData, UnityBuildReport unityBuildReport);
+		public abstract void RefreshData(BuildInfo buildReport, AssetDependencies assetDependencies,
+			TextureData textureData, MeshData meshData, PrefabData prefabData, UnityBuildReport unityBuildReport);
 
 		public abstract void DrawGUI(Rect position,
-			BuildInfo buildReportToDisplay, AssetDependencies assetDependencies, TextureData textureData,
-			UnityBuildReport unityBuildReport,
-			out bool requestRepaint
-		);
+			BuildInfo buildReportToDisplay, AssetDependencies assetDependencies,
+			TextureData textureData, MeshData meshData, PrefabData prefabData,
+			UnityBuildReport unityBuildReport, BuildReportTool.ExtraData extraData,
+			out bool requestRepaint);
 
 		public virtual void Update(double timeNow, double deltaTime, BuildInfo buildReportToDisplay,
 			AssetDependencies assetDependencies)

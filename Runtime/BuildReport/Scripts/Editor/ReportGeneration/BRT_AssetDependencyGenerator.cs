@@ -2,9 +2,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using UnityEditor;
+using UnityEditor.Compilation;
 using UnityEngine;
+using UnityEngine.U2D;
 
 namespace BuildReportTool
 {
@@ -147,20 +150,47 @@ namespace BuildReportTool
 
 			// plus all Resources assets (since they are not referred
 			// to in any scenes, we have to add them explicitly)
-			if (buildInfo.UsedAssets != null && buildInfo.UsedAssets.All != null)
+			if (buildInfo.UsedAssets != null)
 			{
-				var allUsedAssets = buildInfo.UsedAssets.All;
-				for (int n = 0, len = allUsedAssets.Length; n < len; ++n)
+				if (buildInfo.UsedAssets.All != null)
 				{
-					if (!string.IsNullOrEmpty(allUsedAssets[n].Name) &&
-					    allUsedAssets[n].Name.IndexOf("/Resources/", StringComparison.OrdinalIgnoreCase) > -1)
+					var allUsedAssets = buildInfo.UsedAssets.All;
+					for (int n = 0, len = allUsedAssets.Length; n < len; ++n)
 					{
-						startingOpenSet.Enqueue(allUsedAssets[n].Name);
+						if (!string.IsNullOrEmpty(allUsedAssets[n].Name) &&
+						    allUsedAssets[n].Name.IndexOf("/Resources/", StringComparison.OrdinalIgnoreCase) > -1)
+						{
+							startingOpenSet.Enqueue(allUsedAssets[n].Name);
+						}
+					}
+				}
+
+				// also include sprite atlases
+				int textureFilterIdx = buildInfo.FileFilters.GetFilterIdx("Textures");
+				SizePart[] usedTextures;
+				if (buildInfo.HasUsedAssets && textureFilterIdx != -1)
+				{
+					usedTextures = buildInfo.UsedAssets.PerCategory[textureFilterIdx];
+				}
+				else
+				{
+					usedTextures = null;
+				}
+
+				if (usedTextures != null)
+				{
+					foreach (var texture in usedTextures)
+					{
+						if (texture.Name.IsSpriteAtlasFile())
+						{
+							startingOpenSet.Enqueue(texture.Name);
+						}
 					}
 				}
 			}
 
 			Create(data, startingOpenSet, debugLog);
+			CalculateScriptDependencies(data, buildInfo);
 		}
 
 		public static void CreateForAllAssets(AssetDependencies data, BuildReportTool.BuildInfo buildInfo,
@@ -202,6 +232,7 @@ namespace BuildReportTool
 			}
 
 			Create(data, startingOpenSet, debugLog);
+			CalculateScriptDependencies(data, buildInfo);
 		}
 
 		// ==================================================================================
@@ -451,7 +482,9 @@ namespace BuildReportTool
 			// assets that we've finished inspecting
 			var closedSet = new HashSet<string>();
 
-			// -------------------------------------------------------------
+			// ====================================================================
+
+			// Populate the dependencies data for each asset
 
 			while (openSet.Count > 0)
 			{
@@ -512,6 +545,80 @@ namespace BuildReportTool
 						continue;
 					}
 
+					// If newAssetToInspect is a material and foundDependencies[n] is a texture,
+					// we need to check if it's really used in the current shader assigned to the material,
+					// because when you assign a texture to a material, even when you change
+					// the shader, that assigned texture from the previous shader is kept intact.
+					// So when you do AssetDatabase.GetDependencies() on that material, it will output
+					// even textures that are not for the current shader.
+					//
+					// In the context of a build report, such textures need to be identified as
+					// NOT a dependency, because ultimately inside the build, they didn't get used
+					// by that material.
+					//
+					if (newAssetToInspect.IsMaterialFile() && foundDependencies[n].IsTextureFile())
+					{
+						bool textureFound = false;
+#if UNITY_5_6_OR_NEWER
+						var material = AssetDatabase.LoadAssetAtPath<Material>(newAssetToInspect);
+#else
+						var material = (Material)AssetDatabase.LoadAssetAtPath(newAssetToInspect, typeof(Material));
+#endif
+						if (material == null)
+						{
+							// couldn't find material in current project
+							continue;
+						}
+						var shader = material.shader;
+						if (shader == null)
+						{
+							// no shader assigned to material
+							continue;
+						}
+						int shaderPropertyCount = ShaderUtil.GetPropertyCount(shader);
+						for (int pIdx = 0; pIdx < shaderPropertyCount; ++pIdx)
+						{
+							if (ShaderUtil.GetPropertyType(shader, pIdx) != ShaderUtil.ShaderPropertyType.TexEnv)
+							{
+								// go through texture properties only
+								continue;
+							}
+
+							var texture = material.GetTexture(ShaderUtil.GetPropertyName(shader, pIdx));
+							if (texture == null)
+							{
+								// no texture currently assigned to this texture property
+								continue;
+							}
+
+							string textureAssetPath = AssetDatabase.GetAssetPath(texture);
+							if (string.IsNullOrEmpty(textureAssetPath))
+							{
+								// Empty/null path for a loaded texture.
+								// This could mean texture was dynamically created.
+								// Since there's no project asset for the texture,
+								// we can ignore it.
+								continue;
+							}
+
+							if (textureAssetPath == foundDependencies[n])
+							{
+								textureFound = true;
+								break;
+							}
+						}
+
+						if (!textureFound)
+						{
+							// Even though the texture is assigned to the material,
+							// the material is currently using a shader that doesn't
+							// make use of that texture.
+							// So in the context of a build report, this isn't a
+							// dependency, and therefore should be skipped.
+							continue;
+						}
+					}
+
 					if (debugLog)
 					{
 						stringBuilder.Append(n.ToString());
@@ -568,14 +675,17 @@ namespace BuildReportTool
 			}
 
 			// ====================================================================
-			// Create the AssetUserFlattened List
-			// This is the recursively calculated users of the asset.
-			// Indent Levels signify which asset uses which.
+			// Create the Uses List for each scene in the SceneEntries list
 
 			List<AssetUserFlattened> openFlattenedSet = new List<AssetUserFlattened>();
 
 			foreach (var pair in assetDependencies)
 			{
+				// ====================================================================
+				// Create the AssetUserFlattened List
+				// This is the recursively calculated users of the asset.
+				// Indent Levels signify which asset uses which.
+
 				var assetUsers = pair.Value.Users;
 
 				if (assetUsers.Count == 0)
@@ -899,6 +1009,66 @@ namespace BuildReportTool
 					}
 
 					Debug.Log(stringBuilder.ToString());
+				}
+			}
+		}
+
+		// ==================================================================================
+
+		static void CalculateScriptDependencies(AssetDependencies data, BuildReportTool.BuildInfo buildInfo)
+		{
+			int scriptsFilterIdx = buildInfo.FileFilters.GetFilterIdx("Scripts");
+			SizePart[] usedScripts;
+			if (buildInfo.HasUsedAssets && scriptsFilterIdx != -1)
+			{
+				usedScripts = buildInfo.UsedAssets.PerCategory[scriptsFilterIdx];
+			}
+			else
+			{
+				return;
+			}
+
+			var assetDependencies = data.GetAssetDependencies();
+
+			var assemblies = CompilationPipeline.GetAssemblies();
+			foreach (Assembly assembly in assemblies)
+			{
+				string assemblyFilename = Path.GetFileName(assembly.outputPath);
+
+				if (!buildInfo.ScriptDLLs.Exists(assemblyFilename) && !buildInfo.UnityEngineDLLs.Exists(assemblyFilename))
+				{
+					continue;
+				}
+
+				foreach (string sourceFile in assembly.sourceFiles)
+				{
+					if (!usedScripts.Exists(sourceFile))
+					{
+						continue;
+					}
+
+					DependencyEntry assetDependency;
+					if (assetDependencies.ContainsKey(sourceFile))
+					{
+						assetDependency = assetDependencies[sourceFile];
+					}
+					else
+					{
+						assetDependency = new DependencyEntry();
+						assetDependencies.Add(sourceFile, assetDependency);
+					}
+
+					assetDependency.Users.Add(assemblyFilename);
+
+					var usersFlattened = new List<AssetUserFlattened>(assetDependency.Users.Count);
+					assetDependency.UsersFlattened = usersFlattened;
+
+					var newEntry = new AssetUserFlattened(assemblyFilename, 1
+#if BRT_ASSET_DEPENDENCY_DEBUG
+					, "[initial]"
+#endif
+					);
+					usersFlattened.Add(newEntry);
 				}
 			}
 		}

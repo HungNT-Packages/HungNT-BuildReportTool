@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-
 namespace BuildReportTool.Window
 {
 	public static class Utility
@@ -15,6 +14,34 @@ namespace BuildReportTool.Window
 			float y = (position.height - h) * 0.25f;
 
 			GUI.Label(new Rect(x, y, w, h), msg);
+		}
+
+		public static Texture AssemblyIcon
+		{
+			get
+			{
+				var assemblyGuiContent = EditorGUIUtility.IconContent("Assembly Icon");
+				if (assemblyGuiContent != null)
+				{
+					return assemblyGuiContent.image;
+				}
+
+				return null;
+			}
+		}
+
+		public static Texture GetIcon(string assetPath)
+		{
+			if (assetPath.IsAnAssembly())
+			{
+				// an assembly (dll) doesn't exist yet in the library,
+				// so we'll use a hardcoded icon
+				return AssemblyIcon;
+			}
+			else
+			{
+				return AssetDatabase.GetCachedIcon(assetPath);
+			}
 		}
 
 		public static void PingSelectedAssets(AssetList list)
@@ -57,6 +84,7 @@ namespace BuildReportTool.Window
 				//EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath(file, typeof(Object)));
 				EditorGUIUtility.PingObject(asset);
 				Selection.activeObject = asset;
+				EditorUtility.FocusProjectWindow();
 
 				GUI.skin = temp;
 			}
@@ -121,10 +149,28 @@ namespace BuildReportTool.Window
 				return;
 			}
 
+			var labelStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME);
+			if (labelStyle == null)
+			{
+				labelStyle = GUI.skin.label;
+			}
+
+			var descStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.TINY_HELP_STYLE_NAME);
+			if (descStyle == null)
+			{
+				descStyle = GUI.skin.label;
+			}
+
+			var valueStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.BIG_NUMBER_STYLE_NAME);
+			if (valueStyle == null)
+			{
+				valueStyle = GUI.skin.label;
+			}
+
 			GUILayout.BeginVertical();
-			GUILayout.Label(label, BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME);
-			GUILayout.Label(desc, BuildReportTool.Window.Settings.TINY_HELP_STYLE_NAME);
-			GUILayout.Label(value, BuildReportTool.Window.Settings.BIG_NUMBER_STYLE_NAME);
+			GUILayout.Label(label, labelStyle);
+			GUILayout.Label(desc, descStyle);
+			GUILayout.Label(value, valueStyle);
 			GUILayout.EndVertical();
 		}
 	}

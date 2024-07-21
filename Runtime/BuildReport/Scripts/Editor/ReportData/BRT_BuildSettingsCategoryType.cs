@@ -1,32 +1,40 @@
 ﻿namespace BuildReportTool
 {
+	/// <summary>
+	/// Platforms that are shown in the Build Settings Screen
+	/// </summary>
 	public enum BuildSettingCategory
 	{
 		None = 0,
 
-		WindowsDesktopStandalone = 10,
+		WindowsDesktopStandalone = 100,
 		WindowsStoreApp,
-		MacStandalone = 20,
-		LinuxStandalone = 25,
+		MacStandalone = 200,
+		LinuxStandalone = 250,
 
-		WebPlayer = 30,
+		WebPlayer = 300,
 		FlashPlayer,
 		WebGL,
 
-		iOS = 40,
-		Android = 50,
-		Blackberry = 60,
+		iOS = 400,
+		tvOS,
+		Android = 500,
+		Blackberry = 600,
 		WindowsPhone8,
 		Tizen,
 
-		Xbox360 = 70,
+		Xbox360 = 700,
 		XboxOne,
+		XboxSeries,
 
-		PS3 = 80,
+		PS3 = 800,
 		PS4,
 		PSVita,
 		PSM,
+		PS5,
 
-		SamsungTV = 90,
+		Switch = 900,
+
+		SamsungTV = 1000,
 	}
 }

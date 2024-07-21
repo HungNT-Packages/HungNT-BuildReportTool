@@ -2,7 +2,6 @@
 using UnityEditor;
 using System.Collections.Generic;
 
-
 namespace BuildReportTool.Window.Screen
 {
 	public partial class AssetList

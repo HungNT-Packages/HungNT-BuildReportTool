@@ -85,6 +85,11 @@ namespace DldUtil
 
 		public static List<FoundText> SeekAllText(string path, params string[] seekText)
 		{
+			if (!File.Exists(path))
+			{
+				return null;
+			}
+
 			FileStream fs = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 			BufferedStream bs = new BufferedStream(fs);
 			StreamReader sr = new StreamReader(bs);
@@ -126,6 +131,11 @@ namespace DldUtil
 
 		public static IEnumerable<string> ReadFile(string path, bool startAfterSeekedText, params string[] seekText)
 		{
+			if (!File.Exists(path))
+			{
+				yield break;
+			}
+
 			var fs = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 			var bs = new BufferedStream(fs);
 			var sr = new StreamReader(bs);

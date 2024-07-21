@@ -10,8 +10,8 @@ namespace BuildReportTool.Window.Screen
 	{
 		public override string Name { get { return "Build Steps";  } }
 
-		public override void RefreshData(BuildInfo buildReport, AssetDependencies assetDependencies, TextureData textureData,
-			UnityBuildReport unityBuildReport)
+		public override void RefreshData(BuildInfo buildReport, AssetDependencies assetDependencies,
+			TextureData textureData, MeshData meshData, PrefabData prefabData, UnityBuildReport unityBuildReport)
 		{
 			if (unityBuildReport != null)
 			{
@@ -34,6 +34,8 @@ namespace BuildReportTool.Window.Screen
 		readonly GUIContent _logFilterLabel = new GUIContent("0");
 		readonly GUIContent _warnFilterLabel = new GUIContent("0");
 		readonly GUIContent _errorFilterLabel = new GUIContent("0");
+
+		readonly GUIContent _tableItemLabel = new GUIContent();
 
 		Rect _stepsViewRect;
 
@@ -81,11 +83,20 @@ namespace BuildReportTool.Window.Screen
 
 		// ================================================================================================
 
-		public override void DrawGUI(Rect position, BuildInfo buildReportToDisplay, AssetDependencies assetDependencies,
-			TextureData textureData, UnityBuildReport unityBuildReport, out bool requestRepaint)
+		public override void DrawGUI(Rect position,
+			BuildInfo buildReportToDisplay, AssetDependencies assetDependencies,
+			TextureData textureData, MeshData meshData, PrefabData prefabData,
+			UnityBuildReport unityBuildReport, BuildReportTool.ExtraData extraData,
+			out bool requestRepaint)
 		{
 			requestRepaint = false;
 			if (unityBuildReport == null)
+			{
+				return;
+			}
+
+			var steps = unityBuildReport.BuildProcessSteps;
+			if (steps == null)
 			{
 				return;
 			}
@@ -107,15 +118,89 @@ namespace BuildReportTool.Window.Screen
 
 			if (_indentLine == null)
 			{
-				_indentLine = GUI.skin.GetStyle("IndentStyle1").normal.background;
+				var indentStyle = GUI.skin.FindStyle("IndentStyle1");
+				if (indentStyle != null)
+				{
+					_indentLine = indentStyle.normal.background;
+				}
 			}
-			Texture2D prevArrow = GUI.skin.GetStyle(BuildReportTool.Window.Settings.BIG_LEFT_ARROW_ICON_STYLE_NAME).normal.background;
-			Texture2D nextArrow = GUI.skin.GetStyle(BuildReportTool.Window.Settings.BIG_RIGHT_ARROW_ICON_STYLE_NAME).normal.background;
 
-			var steps = unityBuildReport.BuildProcessSteps;
-			if (steps == null)
+			Texture2D prevArrow;
+			var prevArrowStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.BIG_LEFT_ARROW_ICON_STYLE_NAME);
+			if (prevArrowStyle != null)
 			{
-				return;
+				prevArrow = prevArrowStyle.normal.background;
+			}
+			else
+			{
+				prevArrow = null;
+			}
+
+			Texture2D nextArrow;
+			var nextArrowStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.BIG_RIGHT_ARROW_ICON_STYLE_NAME);
+			if (nextArrowStyle != null)
+			{
+				nextArrow = nextArrowStyle.normal.background;
+			}
+			else
+			{
+				nextArrow = null;
+			}
+
+			var buttonStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.TOP_BAR_BTN_STYLE_NAME);
+			if (buttonStyle == null)
+			{
+				buttonStyle = GUI.skin.button;
+			}
+
+			var topBarBgStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.TOP_BAR_BG_STYLE_NAME);
+			if (topBarBgStyle == null)
+			{
+				topBarBgStyle = GUI.skin.label;
+			}
+
+			var topBarLabelStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.TOP_BAR_LABEL_STYLE_NAME);
+			if (topBarLabelStyle == null)
+			{
+				topBarLabelStyle = GUI.skin.label;
+			}
+
+			var columnHeaderStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_COLUMN_HEADER_STYLE_NAME);
+			if (columnHeaderStyle == null)
+			{
+				columnHeaderStyle = GUI.skin.label;
+			}
+
+			var hiddenHorizontalScrollbarStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME);
+			if (hiddenHorizontalScrollbarStyle == null)
+			{
+				hiddenHorizontalScrollbarStyle = GUI.skin.horizontalScrollbar;
+			}
+
+			var hiddenVerticalScrollbarStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME);
+			if (hiddenVerticalScrollbarStyle == null)
+			{
+				hiddenVerticalScrollbarStyle = GUI.skin.verticalScrollbar;
+			}
+
+			var verticalScrollbarStyle = GUI.skin.verticalScrollbar;
+
+			var listNormalStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_SMALL_STYLE_NAME);
+			if (listNormalStyle == null)
+			{
+				listNormalStyle = GUI.skin.label;
+			}
+
+			var listAltStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_SMALL_ALT_STYLE_NAME);
+			if (listAltStyle == null)
+			{
+				listAltStyle = GUI.skin.label;
+			}
+
+			var listSelectedStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_SMALL_SELECTED_NAME);
+			if (listSelectedStyle == null)
+			{
+				listSelectedStyle = GUI.skin.label;
 			}
 
 			// --------------------------------
@@ -131,30 +216,32 @@ namespace BuildReportTool.Window.Screen
 
 			#region Column 1 (Step Name)
 			GUILayout.BeginVertical(BRT_BuildReportWindow.LayoutNone);
-			GUILayout.Label("Step", BuildReportTool.Window.Settings.LIST_COLUMN_HEADER_STYLE_NAME);
+			GUILayout.Label("Step", columnHeaderStyle);
 			_scrollPos = GUILayout.BeginScrollView(_scrollPos,
-				BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME,
-				BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+				hiddenHorizontalScrollbarStyle,
+				hiddenVerticalScrollbarStyle, BRT_BuildReportWindow.LayoutNone);
 
 			bool useAlt = true;
 			for (int i = 0; i < steps.Length; ++i)
 			{
-				string styleToUse = useAlt
-					                    ? BuildReportTool.Window.Settings.LIST_SMALL_ALT_STYLE_NAME
-					                    : BuildReportTool.Window.Settings.LIST_SMALL_STYLE_NAME;
+				var styleToUse = useAlt ? listAltStyle : listNormalStyle;
 				if (i == _selectedStepIdx)
 				{
-					styleToUse = BuildReportTool.Window.Settings.LIST_SMALL_SELECTED_NAME;
+					styleToUse = listSelectedStyle;
 				}
 
 				GUILayout.BeginHorizontal(styleToUse);
 				GUILayout.Space(steps[i].Depth * 20);
-				if (GUILayout.Button(steps[i].Name, styleToUse, BRT_BuildReportWindow.LayoutListHeight))
+
+				_tableItemLabel.text = steps[i].Name;
+				_tableItemLabel.tooltip = _tableItemLabel.text;
+
+				if (GUILayout.Button(_tableItemLabel, styleToUse, BRT_BuildReportWindow.LayoutListHeight))
 				{
 					SelectStep(i, steps);
 				}
 				GUILayout.EndHorizontal();
-				if (Event.current.type == EventType.Repaint)
+				if (Event.current.type == EventType.Repaint && _indentLine != null)
 				{
 					Rect labelRect = GUILayoutUtility.GetLastRect();
 
@@ -180,19 +267,17 @@ namespace BuildReportTool.Window.Screen
 
 			#region Column 2 (Warning Count)
 			GUILayout.BeginVertical(BRT_BuildReportWindow.LayoutNone);
-			GUILayout.Label("Warning Count", BuildReportTool.Window.Settings.LIST_COLUMN_HEADER_STYLE_NAME);
+			GUILayout.Label("Warnings", columnHeaderStyle, BRT_BuildReportWindow.LayoutMinWidth63);
 			_scrollPos = GUILayout.BeginScrollView(_scrollPos,
-				BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME,
-				BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+				hiddenHorizontalScrollbarStyle,
+				hiddenVerticalScrollbarStyle, BRT_BuildReportWindow.LayoutNone);
 			useAlt = true;
 			for (int i = 0; i < steps.Length; ++i)
 			{
-				string styleToUse = useAlt
-					                    ? BuildReportTool.Window.Settings.LIST_SMALL_ALT_STYLE_NAME
-					                    : BuildReportTool.Window.Settings.LIST_SMALL_STYLE_NAME;
+				var styleToUse = useAlt ? listAltStyle : listNormalStyle;
 				if (i == _selectedStepIdx)
 				{
-					styleToUse = BuildReportTool.Window.Settings.LIST_SMALL_SELECTED_NAME;
+					styleToUse = listSelectedStyle;
 				}
 
 				if (steps[i].WarnLogCount > 0)
@@ -214,19 +299,17 @@ namespace BuildReportTool.Window.Screen
 
 			#region Column 3 (Error Count)
 			GUILayout.BeginVertical(BRT_BuildReportWindow.LayoutNone);
-			GUILayout.Label("Error Count", BuildReportTool.Window.Settings.LIST_COLUMN_HEADER_STYLE_NAME);
+			GUILayout.Label("Errors", columnHeaderStyle, BRT_BuildReportWindow.LayoutMinWidth44);
 			_scrollPos = GUILayout.BeginScrollView(_scrollPos,
-				BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME,
-				BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+				hiddenHorizontalScrollbarStyle,
+				hiddenVerticalScrollbarStyle, BRT_BuildReportWindow.LayoutNone);
 			useAlt = true;
 			for (int i = 0; i < steps.Length; ++i)
 			{
-				string styleToUse = useAlt
-					                    ? BuildReportTool.Window.Settings.LIST_SMALL_ALT_STYLE_NAME
-					                    : BuildReportTool.Window.Settings.LIST_SMALL_STYLE_NAME;
+				var styleToUse = useAlt ? listAltStyle : listNormalStyle;
 				if (i == _selectedStepIdx)
 				{
-					styleToUse = BuildReportTool.Window.Settings.LIST_SMALL_SELECTED_NAME;
+					styleToUse = listSelectedStyle;
 				}
 
 				if (steps[i].ErrorLogCount > 0)
@@ -248,21 +331,19 @@ namespace BuildReportTool.Window.Screen
 
 			#region Last Column (Duration)
 			GUILayout.BeginVertical(BRT_BuildReportWindow.LayoutNone);
-			GUILayout.Label("Duration", BuildReportTool.Window.Settings.LIST_COLUMN_HEADER_STYLE_NAME);
+			GUILayout.Label("Duration", columnHeaderStyle, BRT_BuildReportWindow.LayoutMinWidth84);
 			_scrollPos = GUILayout.BeginScrollView(_scrollPos,
-				BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME,
-				"verticalscrollbar", BRT_BuildReportWindow.LayoutNone);
+				hiddenHorizontalScrollbarStyle,
+				verticalScrollbarStyle, BRT_BuildReportWindow.LayoutNone);
 
 
 			useAlt = true;
 			for (int i = 0; i < steps.Length; ++i)
 			{
-				string styleToUse = useAlt
-					                    ? BuildReportTool.Window.Settings.LIST_SMALL_ALT_STYLE_NAME
-					                    : BuildReportTool.Window.Settings.LIST_SMALL_STYLE_NAME;
+				var styleToUse = useAlt ? listAltStyle : listNormalStyle;
 				if (i == _selectedStepIdx)
 				{
-					styleToUse = BuildReportTool.Window.Settings.LIST_SMALL_SELECTED_NAME;
+					styleToUse = listSelectedStyle;
 				}
 
 				string duration;
@@ -275,7 +356,11 @@ namespace BuildReportTool.Window.Screen
 					duration = steps[i].Duration.ToReadableString();
 				}
 
-				GUILayout.Label(duration, styleToUse, BRT_BuildReportWindow.LayoutListHeight);
+				_tableItemLabel.text = duration;
+				GUILayout.Label(_tableItemLabel, styleToUse,
+					GUILayout.Height(BRT_BuildReportWindow.LIST_HEIGHT),
+					GUILayout.ExpandHeight(false),
+					GUILayout.MinWidth(styleToUse.CalcSize(_tableItemLabel).x));
 
 				useAlt = !useAlt;
 			}
@@ -299,7 +384,7 @@ namespace BuildReportTool.Window.Screen
 			GUILayout.BeginVertical(BRT_BuildReportWindow.LayoutNone);
 
 			#region Logs Toolbar
-			GUILayout.BeginHorizontal(BuildReportTool.Window.Settings.TOP_BAR_BG_STYLE_NAME, BRT_BuildReportWindow.LayoutHeight18);
+			GUILayout.BeginHorizontal(topBarBgStyle, BRT_BuildReportWindow.LayoutHeight18);
 			GUILayout.Space(10);
 			string logMessagesTitle;
 			bool hasStepSelected = _selectedStepIdx != -1 &&
@@ -313,7 +398,7 @@ namespace BuildReportTool.Window.Screen
 			{
 				logMessagesTitle = "Log Messages (Total)";
 			}
-			GUILayout.Label(logMessagesTitle, BuildReportTool.Window.Settings.TOP_BAR_LABEL_STYLE_NAME, BRT_BuildReportWindow.LayoutNoExpandWidth);
+			GUILayout.Label(logMessagesTitle, topBarLabelStyle, BRT_BuildReportWindow.LayoutNoExpandWidth);
 			if (Event.current.type == EventType.Repaint)
 			{
 				_dividerRect = GUILayoutUtility.GetLastRect();
@@ -322,9 +407,10 @@ namespace BuildReportTool.Window.Screen
 
 			int messagePaginationLength = BuildReportTool.Options.LogMessagePaginationLength;
 
-			if (GUILayout.Button(prevArrow, BuildReportTool.Window.Settings.TOP_BAR_BTN_STYLE_NAME,
-				    BRT_BuildReportWindow.LayoutNone) &&
-			    (_logMessageToShowStartOffset - messagePaginationLength >= 0))
+			bool prevButton = (prevArrow != null
+				? GUILayout.Button(prevArrow, buttonStyle)
+				: GUILayout.Button("Previous", buttonStyle));
+			if (prevButton && (_logMessageToShowStartOffset - messagePaginationLength >= 0))
 			{
 				_logMessageToShowStartOffset -= messagePaginationLength;
 			}
@@ -366,15 +452,15 @@ namespace BuildReportTool.Window.Screen
 					_totalVisibleMessageCount.ToString(assetCountDigitNumFormat));
 			}
 
-			if (GUILayout.Button(paginateLabel, BuildReportTool.Window.Settings.TOP_BAR_LABEL_STYLE_NAME,
-				BRT_BuildReportWindow.LayoutNone))
+			if (GUILayout.Button(paginateLabel, topBarLabelStyle, BRT_BuildReportWindow.LayoutNone))
 			{
 				_showPageNumbers = !_showPageNumbers;
 			}
 
-			if (GUILayout.Button(nextArrow, BuildReportTool.Window.Settings.TOP_BAR_BTN_STYLE_NAME,
-				    BRT_BuildReportWindow.LayoutNone) &&
-			    (_logMessageToShowStartOffset + messagePaginationLength < _totalVisibleMessageCount))
+			bool nextButton = nextArrow != null
+				? GUILayout.Button(nextArrow, buttonStyle)
+				: GUILayout.Button("Next", buttonStyle);
+			if (nextButton && (_logMessageToShowStartOffset + messagePaginationLength < _totalVisibleMessageCount))
 			{
 				_logMessageToShowStartOffset += messagePaginationLength;
 			}
@@ -382,7 +468,7 @@ namespace BuildReportTool.Window.Screen
 			GUILayout.Space(8);
 
 			var newShowLogMessagesCollapsed = GUILayout.Toggle(_showLogMessagesCollapsed, "Collapse",
-				BuildReportTool.Window.Settings.TOP_BAR_BTN_STYLE_NAME, BRT_BuildReportWindow.LayoutNoExpandWidth);
+				buttonStyle, BRT_BuildReportWindow.LayoutNoExpandWidth);
 			if (newShowLogMessagesCollapsed != _showLogMessagesCollapsed)
 			{
 				_showLogMessagesCollapsed = newShowLogMessagesCollapsed;
@@ -390,11 +476,11 @@ namespace BuildReportTool.Window.Screen
 			}
 			GUILayout.Space(8);
 			bool newShowLogMessages = GUILayout.Toggle(_showLogMessages, _logFilterLabel,
-				BuildReportTool.Window.Settings.TOP_BAR_BTN_STYLE_NAME, BRT_BuildReportWindow.LayoutNoExpandWidth);
+				buttonStyle, BRT_BuildReportWindow.LayoutNoExpandWidth);
 			bool newShowWarnMessages = GUILayout.Toggle(_showWarnMessages, _warnFilterLabel,
-				BuildReportTool.Window.Settings.TOP_BAR_BTN_STYLE_NAME, BRT_BuildReportWindow.LayoutNoExpandWidth);
+				buttonStyle, BRT_BuildReportWindow.LayoutNoExpandWidth);
 			bool newShowErrorMessages = GUILayout.Toggle(_showErrorMessages, _errorFilterLabel,
-				BuildReportTool.Window.Settings.TOP_BAR_BTN_STYLE_NAME, BRT_BuildReportWindow.LayoutNoExpandWidth);
+				buttonStyle, BRT_BuildReportWindow.LayoutNoExpandWidth);
 			if (newShowLogMessages != _showLogMessages)
 			{
 				_showLogMessages = newShowLogMessages;
@@ -440,8 +526,8 @@ namespace BuildReportTool.Window.Screen
 			}
 
 			_logMessagesScrollPos = GUILayout.BeginScrollView(_logMessagesScrollPos,
-				BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME,
-				"verticalscrollbar", BRT_BuildReportWindow.LayoutNone);
+				hiddenHorizontalScrollbarStyle,
+				verticalScrollbarStyle, BRT_BuildReportWindow.LayoutNone);
 
 			if (_showLogMessages || _showWarnMessages || _showErrorMessages)
 			{
@@ -643,9 +729,7 @@ namespace BuildReportTool.Window.Screen
 							continue;
 						}
 
-						string styleToUse = useAlt
-							                    ? BuildReportTool.Window.Settings.LIST_SMALL_ALT_STYLE_NAME
-							                    : BuildReportTool.Window.Settings.LIST_SMALL_STYLE_NAME;
+						var styleToUse = useAlt ? listAltStyle : listNormalStyle;
 
 						GUILayout.BeginHorizontal(styleToUse, BRT_BuildReportWindow.LayoutNone);
 						GUILayout.Space(8);
@@ -674,7 +758,7 @@ namespace BuildReportTool.Window.Screen
 			#endregion
 
 			// if clicked on nothing interactable, then remove selection
-			if (GUI.Button(_stepsViewRect, GUIContent.none, "HiddenScrollbar"))
+			if (GUI.Button(_stepsViewRect, GUIContent.none, hiddenVerticalScrollbarStyle))
          {
 	         SelectStep(-1, steps);
          }
@@ -686,6 +770,41 @@ namespace BuildReportTool.Window.Screen
 				EditorGUIUtility.GetBuiltinSkin(EditorGUIUtility.isProSkin ? EditorSkin.Scene : EditorSkin.Inspector);
 			var logCountStyle = nativeSkin.FindStyle("CN CountBadge");
 
+			var listNormalStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_NORMAL_STYLE_NAME);
+			if (listNormalStyle == null)
+			{
+				listNormalStyle = GUI.skin.label;
+			}
+
+			var listAltStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_NORMAL_ALT_STYLE_NAME);
+			if (listAltStyle == null)
+			{
+				listAltStyle = GUI.skin.label;
+			}
+
+			var listSelectedStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_NORMAL_SELECTED_NAME);
+			if (listSelectedStyle == null)
+			{
+				listSelectedStyle = GUI.skin.label;
+			}
+
+			var textureStyle = GUI.skin.FindStyle("DrawTexture");
+			if (textureStyle == null)
+			{
+				textureStyle = GUI.skin.label;
+			}
+
+			var textStyle = GUI.skin.FindStyle("Text");
+			if (textStyle == null)
+			{
+				textStyle = GUI.skin.label;
+			}
+
+			var textSelectedStyle = GUI.skin.FindStyle("TextSelected");
+			if (textSelectedStyle == null)
+			{
+				textSelectedStyle = GUI.skin.label;
+			}
 
 
 			int messagesShown = 0;
@@ -710,19 +829,17 @@ namespace BuildReportTool.Window.Screen
 					continue;
 				}
 
-				string logStyleToUse = useAlt
-					                    ? BuildReportTool.Window.Settings.LIST_NORMAL_ALT_STYLE_NAME
-					                    : BuildReportTool.Window.Settings.LIST_NORMAL_STYLE_NAME;
-				string logMessageStyleToUse = "Text";
+				var logStyleToUse = useAlt ? listAltStyle : listNormalStyle;
+				var logMessageStyleToUse = textStyle;
 				if (stepIdx == _selectedLogStepIdx && m == _selectedLogIdx)
 				{
-					logStyleToUse = BuildReportTool.Window.Settings.LIST_NORMAL_SELECTED_NAME;
-					logMessageStyleToUse = "TextSelected";
+					logStyleToUse = listSelectedStyle;
+					logMessageStyleToUse = textSelectedStyle;
 				}
 
 				GUILayout.BeginHorizontal(logStyleToUse, BRT_BuildReportWindow.LayoutMinHeight30);
 				GUILayout.Space(leftIndent);
-				GUILayout.Label(logTypeIcon, "DrawTexture", BRT_BuildReportWindow.Layout20x16);
+				GUILayout.Label(logTypeIcon, textureStyle, BRT_BuildReportWindow.Layout20x16);
 				GUILayout.Label(messages[m].Message, logMessageStyleToUse, BRT_BuildReportWindow.LayoutNone);
 
 				if (_showLogMessagesCollapsed && messages[m].Count > 0)

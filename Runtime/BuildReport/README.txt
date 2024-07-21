@@ -18,16 +18,17 @@ Then try opening the Build Report Window again.
 
 Options are saved to an XML file named "BuildReportToolOptions.xml".
 
-By default this file is saved inside the BuildReport folder, but can be moved to, and will be recognized at certain paths:
+By default this file is saved inside the ProjectSettings folder of your Unity project, but can be copied/moved to the following locations:
+
 1. inside the BuildReport folder itself
 2. inside the topmost Assets folder of your project
 3. outside the topmost Assets folder (i.e. in your project folder)
 4. in your project folder's ProjectSettings folder
 5. in the user's My Documents (inside the same folder where Build Report XML files are saved)
 
-This is in prioritized order, so even if there is an options file in the My Documents folder, if there is also one in the project folder, it will use the one in the project folder instead.
+This is in prioritized order, to allow you to have per-project options: so even if there is an options file in the My Documents folder, but there is also one in the project folder, it will use the one in the project folder instead.
 
-If at any time no options file is found anywhere, it will create a new one inside the BuildReport folder with default values. You can move this file elsewhere in the above mentioned places if you don't want it inside the BuildReport folder.
+If at any time no options file is found in any of these paths, it will create a new one inside the ProjectSettings folder of your Unity project, with default values. You can move this file elsewhere in the above mentioned places if you don't want it inside that path.
 
 
 
@@ -176,7 +177,9 @@ Side note: Size readings in the Build Report window that have fractional parts a
 
 === Licenses ===
 
-Build Report Tool uses FuzzyString (https://fuzzystring.codeplex.com/). FuzzyString is in the Eclipse Public License (EPL).
+Build Report Tool uses FuzzyString (https://github.com/kdjones/fuzzystring), an approximate string comparision library. FuzzyString is in the Eclipse Public License (EPL). A copy of the license can be found in BuildReport/Scripts/Editor/FuzzyString/FuzzyStringLicense.txt
+
+Build Report Tool uses MiniJSON (https://github.com/AnomalousUnderdog/MiniJSON.cs), a small JSON parser. Copyright (c) 2013 Calvin Rien. MiniJSON is licensed under the MIT License. A copy of the license can be found in BuildReport/Scripts/Editor/MiniJSON/MiniJSON.cs
 
 
 
@@ -187,12 +190,10 @@ Don't worry, the assets that the Build Report Tool itself uses won't be included
 
 
 
-Copyright © 2013-2019 by Anomalous Underdog
+Copyright © 2013-2022 by Anomalous Underdog
 
 For support, you can either:
 
 * send me a tweet at http://twitter.com/AnomalusUndrdog
 * send me a private message in the Unity forums (http://forum.unity3d.com/members/8479-AnomalusUndrdog)
 * send me an email at anomalous_underdog@yahoo.com
-
-

@@ -28,18 +28,33 @@ namespace BuildReportTool
 	{
 		/// <summary>
 		/// Name of project folder.
+		/// Included as part of the filename when saved.
 		/// </summary>
 		public string ProjectName;
 
 		/// <summary>
 		/// Type of build that the project was configured to, at the time that UnityBuildReport was collected.
+		/// Included as part of the filename when saved.
 		/// </summary>
 		public string BuildType;
 
 		/// <summary>
 		/// When UnityBuildReport was collected.
+		/// Included as part of the filename when saved.
 		/// </summary>
 		public System.DateTime TimeGot;
+
+		public ulong TotalSize;
+
+		public System.DateTime BuildStartedAt;
+		public System.TimeSpan BuildTotalTime;
+
+		public UnityEditor.BuildOptions BuildOptions;
+
+		public bool HasBuildOption(UnityEditor.BuildOptions optionToCheck)
+		{
+			return (BuildOptions & optionToCheck) == optionToCheck;
+		}
 
 		// -----------------------------------------
 
@@ -49,6 +64,10 @@ namespace BuildReportTool
 #if UNITY_2018_1_OR_NEWER
 		public void SetFrom(UnityEditor.Build.Reporting.BuildReport buildReport)
 		{
+			TotalSize = buildReport.summary.totalSize;
+			BuildStartedAt = buildReport.summary.buildStartedAt;
+			BuildTotalTime = buildReport.summary.totalTime;
+
 			string outputFolder = buildReport.summary.outputPath;
 			int outputPathLength;
 
@@ -60,33 +79,62 @@ namespace BuildReportTool
 				}
 				else
 				{
+					// +1 for the trailing slash, we want to remove
+					// the slash at the start of our file entries
 					outputPathLength = outputFolder.Length+1;
 				}
 			}
 			else if (System.IO.File.Exists(outputFolder))
 			{
-				outputFolder = System.IO.Path.GetDirectoryName(buildReport.summary.outputPath);
+				// output path is a file, likely the executable file
+				// so get the parent folder of that file
+				outputFolder = System.IO.Path.GetDirectoryName(outputFolder);
+
 				if (!string.IsNullOrEmpty(outputFolder))
 				{
+					// +1 for the trailing slash, we want to remove
+					// the slash at the start of our file entries
 					outputPathLength = outputFolder.Length+1;
 				}
 				else
 				{
-					outputPathLength = 0;
+					// output file has no parent folder?
+					return;
 				}
 			}
 			else
 			{
+				// output path doesn't exist
 				outputPathLength = 0;
 			}
 
-			OutputFiles = new OutputFile[buildReport.GetFiles().Length];
-			for (int i = 0; i < OutputFiles.Length; ++i)
+			BuildOptions = buildReport.summary.options;
+
+			outputFolder = outputFolder.Replace("\\", "/");
+
+#if !UNITY_2022_2_OR_NEWER
+			var files = buildReport.files;
+#else
+			var files = buildReport.GetFiles();
+#endif
+			var outputFiles = new List<OutputFile>(files.Length);
+			OutputFiles = new OutputFile[files.Length];
+			for (int i = 0; i < files.Length; ++i)
 			{
-				OutputFiles[i].FilePath = buildReport.GetFiles()[i].path.Substring(outputPathLength);
-				OutputFiles[i].Role = buildReport.GetFiles()[i].role;
-				OutputFiles[i].Size = buildReport.GetFiles()[i].size;
+				if (!files[i].path.StartsWith(outputFolder))
+				{
+					// file is not inside the build folder, likely a temporary or debug file (like a pdb file)
+					//Debug.Log($"Found file not in build {i}: {buildReport.files[i].path}");
+					continue;
+				}
+
+				OutputFile newEntry;
+				newEntry.FilePath = files[i].path.Substring(outputPathLength);
+				newEntry.Role = files[i].role;
+				newEntry.Size = files[i].size;
+				outputFiles.Add(newEntry);
 			}
+			OutputFiles = outputFiles.ToArray();
 
 			_totalBuildTime = new TimeSpan(0);
 			BuildProcessSteps = new BuildProcessStep[buildReport.steps.Length];

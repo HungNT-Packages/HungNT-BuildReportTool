@@ -1,6 +1,5 @@
 ﻿using System;
 using UnityEngine;
-using System.Collections;
 
 namespace DldUtil
 {
@@ -46,7 +45,28 @@ namespace DldUtil
 
 			GetUnityVersionNumbers(out unityMajor, out unityMinor, out unityPatch);
 
-			return (unityMajor >= majorAtLeast) && (unityMinor >= minorAtLeast) && (unityPatch >= patchAtLeast);
+			if (unityMajor > majorAtLeast)
+			{
+				return true;
+			}
+
+			if (unityMajor == majorAtLeast)
+			{
+				if (unityMinor > minorAtLeast)
+				{
+					return true;
+				}
+
+				if (unityMinor == minorAtLeast)
+				{
+					if (unityPatch >= patchAtLeast)
+					{
+						return true;
+					}
+				}
+			}
+
+			return false;
 		}
 
 		public static bool IsUnityVersionAtMost(int majorAtMost, int minorAtMost, int patchAtMost)
@@ -57,7 +77,28 @@ namespace DldUtil
 
 			GetUnityVersionNumbers(out unityMajor, out unityMinor, out unityPatch);
 
-			return (unityMajor <= majorAtMost) && (unityMinor <= minorAtMost) && (unityPatch <= patchAtMost);
+			if (unityMajor < majorAtMost)
+			{
+				return true;
+			}
+
+			if (unityMajor == majorAtMost)
+			{
+				if (unityMinor < minorAtMost)
+				{
+					return true;
+				}
+
+				if (unityMinor == minorAtMost)
+				{
+					if (unityPatch <= patchAtMost)
+					{
+						return true;
+					}
+				}
+			}
+
+			return false;
 		}
 
 
@@ -70,7 +111,28 @@ namespace DldUtil
 
 			GetUnityVersionNumbers(unityVersionString, out unityMajor, out unityMinor, out unityPatch);
 
-			return (unityMajor >= majorAtLeast) && (unityMinor >= minorAtLeast) && (unityPatch >= patchAtLeast);
+			if (unityMajor > majorAtLeast)
+			{
+				return true;
+			}
+
+			if (unityMajor == majorAtLeast)
+			{
+				if (unityMinor > minorAtLeast)
+				{
+					return true;
+				}
+
+				if (unityMinor == minorAtLeast)
+				{
+					if (unityPatch >= patchAtLeast)
+					{
+						return true;
+					}
+				}
+			}
+
+			return false;
 		}
 
 		public static bool IsUnityVersionAtMost(string unityVersionString, int majorAtMost, int minorAtMost,
@@ -82,7 +144,28 @@ namespace DldUtil
 
 			GetUnityVersionNumbers(unityVersionString, out unityMajor, out unityMinor, out unityPatch);
 
-			return (unityMajor <= majorAtMost) && (unityMinor <= minorAtMost) && (unityPatch <= patchAtMost);
+			if (unityMajor < majorAtMost)
+			{
+				return true;
+			}
+
+			if (unityMajor == majorAtMost)
+			{
+				if (unityMinor < minorAtMost)
+				{
+					return true;
+				}
+
+				if (unityMinor == minorAtMost)
+				{
+					if (unityPatch <= patchAtMost)
+					{
+						return true;
+					}
+				}
+			}
+
+			return false;
 		}
 	}
 }

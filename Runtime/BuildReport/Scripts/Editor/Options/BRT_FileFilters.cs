@@ -154,6 +154,8 @@ namespace BuildReportTool
 			{
 				//Debug.Log("_usesExactFileMatching");
 
+				string fileNameOnly = file.GetFileNameOnly();
+
 				for (int n = 0, len = _filtersList.Length; n < len; ++n)
 				{
 					//Debug.Log("in quotes: " + _filtersList[n] + " " + (_filtersList[n].StartsWith("\"") && _filtersList[n].EndsWith("\"")));
@@ -161,7 +163,7 @@ namespace BuildReportTool
 
 					if (_filtersList[n].StartsWith("\"") && _filtersList[n].EndsWith("\""))
 					{
-						string fileWithQuotes = "\"" + System.IO.Path.GetFileName(file) + "\"";
+						string fileWithQuotes = string.Format("\"{0}\"", fileNameOnly);
 
 						//Debug.Log("match? " + _filtersList[n] + " == " + fileWithQuotes);
 
@@ -263,6 +265,19 @@ namespace BuildReportTool
 			return _selectedFilterIdx >= 1 && _selectedFilterIdx <= _fileFilters.Length ? _fileFilters[_selectedFilterIdx-1].Label : null;
 		}
 
+		public int GetFilterIdx(string label)
+		{
+			for (int n = 0; n < _fileFilters.Length; ++n)
+			{
+				if (_fileFilters[n].Label == label)
+				{
+					return n;
+				}
+			}
+
+			return -1;
+		}
+
 		public void ForceSetSelectedFilterIdx(int idx)
 		{
 			if ((idx < _fileFilters.Length + 2) && idx >= 0)
@@ -277,7 +292,7 @@ namespace BuildReportTool
 		const string HAS_CONTENTS_UNPRESSED_STYLE_NAME = "ButtonHasContents";
 		const string HAS_CONTENTS_ALREADY_PRESSED_STYLE_NAME = "ButtonAlreadyPressed";
 
-		string GetStyleToUse(int assetNum, int selectedIdx, int idxOfThisGroup)
+		GUIStyle GetStyleToUse(int assetNum, int selectedIdx, int idxOfThisGroup)
 		{
 			string styleToUse;
 
@@ -298,7 +313,12 @@ namespace BuildReportTool
 				}
 			}
 
-			return styleToUse;
+			var style = GUI.skin.FindStyle(styleToUse);
+			if (style == null)
+			{
+				return GUI.skin.button;
+			}
+			return style;
 		}
 
 		public bool Draw(AssetList assetList, float width)
@@ -317,14 +337,26 @@ namespace BuildReportTool
 
 		bool DrawFiltersAsDropDown(AssetList assetList, float width)
 		{
+			var topBarLabelStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.TOP_BAR_LABEL_STYLE_NAME);
+			if (topBarLabelStyle == null)
+			{
+				topBarLabelStyle = GUI.skin.label;
+			}
+
+			var topBarPopupStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.FILE_FILTER_POPUP_STYLE_NAME);
+			if (topBarPopupStyle == null)
+			{
+				topBarPopupStyle = GUI.skin.label;
+			}
+
 			var changed = false;
 			GUILayout.BeginHorizontal();
 			GUILayout.Space(3);
-			GUILayout.Label("Filter: ", BuildReportTool.Window.Settings.TOP_BAR_LABEL_STYLE_NAME);
+			GUILayout.Label("Filter: ", topBarLabelStyle);
 			if (assetList != null && assetList.Labels != null && assetList.Labels.Length > 0)
 			{
 				var newSelectedFilterIdx = EditorGUILayout.Popup(_selectedFilterIdx, assetList.Labels,
-					BuildReportTool.Window.Settings.FILE_FILTER_POPUP_STYLE_NAME);
+					topBarPopupStyle);
 
 				if (newSelectedFilterIdx != _selectedFilterIdx)
 				{
@@ -348,9 +380,9 @@ namespace BuildReportTool
 
 
 			var styleToUse = GetStyleToUse(assetList.All.Length, _selectedFilterIdx, 0);
-			var label = "All (" + assetList.All.Length.ToString() + ")";
+			var label = string.Format("All ({0})", assetList.All.Length.ToString());
 
-			var widthToAdd = GUI.skin.GetStyle(styleToUse).CalcSize(new GUIContent(label)).x;
+			var widthToAdd = styleToUse.CalcSize(new GUIContent(label)).x;
 
 			overallWidth += widthToAdd;
 
@@ -373,9 +405,9 @@ namespace BuildReportTool
 				for (int n = 0, len = _fileFilters.Length; n < len; ++n)
 				{
 					styleToUse = GetStyleToUse(assetList.PerCategory[n].Length, _selectedFilterIdx, n + 1);
-					label = _fileFilters[n].Label + " (" + assetList.PerCategory[n].Length.ToString() + ")";
+					label = string.Format("{0} ({1})", _fileFilters[n].Label, assetList.PerCategory[n].Length.ToString());
 
-					widthToAdd = GUI.skin.GetStyle(styleToUse).CalcSize(new GUIContent(label)).x;
+					widthToAdd = styleToUse.CalcSize(new GUIContent(label)).x;
 
 					if (overallWidth + widthToAdd >= width)
 					{
@@ -399,7 +431,7 @@ namespace BuildReportTool
 
 				label = string.Format("Unknown ({0})",
 					assetList.PerCategory[assetList.PerCategory.Length - 1].Length.ToString());
-				widthToAdd = GUI.skin.GetStyle(styleToUse).CalcSize(new GUIContent(label)).x;
+				widthToAdd = styleToUse.CalcSize(new GUIContent(label)).x;
 				if (overallWidth + widthToAdd >= width)
 				{
 					//overallWidth = 0;

@@ -15,11 +15,13 @@ namespace BuildReportTool
 
 		/// <summary>
 		/// Name of project folder.
+		/// Included as part of the filename when saved.
 		/// </summary>
 		public string ProjectName;
 
 		/// <summary>
 		/// Type of build, as reported by the Unity Editor log, but as a string.
+		/// Included as part of the filename when saved.
 		/// </summary>
 		public string BuildType;
 
@@ -27,6 +29,7 @@ namespace BuildReportTool
 
 		/// <summary>
 		/// When build was created.
+		/// Included as part of the filename when saved.
 		/// </summary>
 		public System.DateTime BuildTimeGot;
 
@@ -260,6 +263,7 @@ namespace BuildReportTool
 		public bool UnusedAssetsIncludedInCreation;
 		public bool UnusedPrefabsIncludedInCreation;
 
+		public bool ProcessUnusedAssetsInBatches = true;
 		public int UnusedAssetsEntriesPerBatch;
 	}
 } // namespace BuildReportTool

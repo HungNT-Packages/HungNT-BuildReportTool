@@ -10,9 +10,9 @@ namespace BuildReportTool.Window.Screen
 	public partial class AssetList : BaseScreen
 	{
 #if BRT_ASSET_LIST_SCREEN_DEBUG
-	bool _showDebugText;
-	readonly GUIContent _debugLabel = new GUIContent();
-	StringBuilder _debugText;
+		bool _showDebugText;
+		readonly GUIContent _debugLabel = new GUIContent();
+		System.Text.StringBuilder _debugText;
 #endif
 
 		const int SCROLLBAR_BOTTOM_PADDING = 5;
@@ -32,6 +32,16 @@ namespace BuildReportTool.Window.Screen
 		BuildReportTool.TextureData.DataId _clickedTextureDataId = BuildReportTool.TextureData.DataId.None;
 
 		string _overridenTextureDataTooltipText;
+
+		BuildReportTool.MeshData.DataId _currentMeshDataSortType = BuildReportTool.MeshData.DataId.None;
+
+		BuildReportTool.MeshData.DataId _hoveredMeshDataId = BuildReportTool.MeshData.DataId.None;
+		BuildReportTool.MeshData.DataId _clickedMeshDataId = BuildReportTool.MeshData.DataId.None;
+
+		BuildReportTool.PrefabData.DataId _currentPrefabDataSortType = BuildReportTool.PrefabData.DataId.None;
+
+		BuildReportTool.PrefabData.DataId _hoveredPrefabDataId = BuildReportTool.PrefabData.DataId.None;
+		BuildReportTool.PrefabData.DataId _clickedPrefabDataId = BuildReportTool.PrefabData.DataId.None;
 
 		/// <summary>
 		/// Whether we are sorting ascending or descending.
@@ -117,7 +127,8 @@ namespace BuildReportTool.Window.Screen
 			get { return ""; }
 		}
 
-		public override void RefreshData(BuildInfo buildReport, AssetDependencies assetDependencies, TextureData textureData, UnityBuildReport unityBuildReport)
+		public override void RefreshData(BuildInfo buildReport, AssetDependencies assetDependencies,
+			TextureData textureData, MeshData meshData, PrefabData prefabData, UnityBuildReport unityBuildReport)
 		{
 			RefreshConfiguredFileFilters();
 
@@ -193,17 +204,23 @@ namespace BuildReportTool.Window.Screen
 				columnOptionsBg.x = _showColumnOptionButtonRect.x;
 				columnOptionsBg.y = _showColumnOptionButtonRect.yMax;
 				columnOptionsBg.width = UnityEngine.Screen.width - _showColumnOptionButtonRect.x - 19;
-				columnOptionsBg.height = 330;
+				columnOptionsBg.height = 448;
 
 				columnOptionsBg.x = UnityEngine.Screen.width - columnOptionsBg.width - 19;
 
-				var bgStyle = GUI.skin.GetStyle(isOverlay ? "PopupPanel" : "HiddenScrollbar");
+				var bgStyle = GUI.skin.FindStyle(isOverlay ? "PopupPanel" : "HiddenScrollbar");
+				if (bgStyle == null)
+				{
+					bgStyle = GUI.skin.box;
+				}
 				GUI.Box(columnOptionsBg, GUIContent.none, bgStyle);
 
 				_mouseIsOnOverlayControl = columnOptionsBg.Contains(Event.current.mousePosition);
 				if (_mouseIsOnOverlayControl)
 				{
 					_hoveredTextureDataId = TextureData.DataId.None;
+					_hoveredMeshDataId = MeshData.DataId.None;
+					_hoveredPrefabDataId = PrefabData.DataId.None;
 					_overridenTextureDataTooltipText = null;
 				}
 
@@ -222,10 +239,15 @@ namespace BuildReportTool.Window.Screen
 
 				float normalColumnsHeight = 0;
 
-				float column1Width = 0;
-				float column2Width = 0;
+				float textureDataLowestY = 0;
+				float textureDataColumn1Width = 0;
+				float textureDataColumn2Width = 0;
 
-				var toggleHeaderStyle = GUI.skin.GetStyle("Header3");
+				var toggleHeaderStyle = GUI.skin.FindStyle("Header3");
+				if (toggleHeaderStyle == null)
+				{
+					toggleHeaderStyle = GUI.skin.label;
+				}
 
 				_columnLabel.text = "Columns:";
 				rect.size = toggleHeaderStyle.CalcSize(_columnLabel);
@@ -284,6 +306,8 @@ namespace BuildReportTool.Window.Screen
 				rect.y += rect.height - 2;
 				float toggleYStart = rect.y;
 
+				#region Texture Column 1
+
 				_columnLabel.text = "Texture Type";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
 				rect.width += TOGGLE_EXTRA_WIDTH;
@@ -293,7 +317,7 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.TextureType;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column1Width = Mathf.Max(column1Width, rect.width);
+				textureDataColumn1Width = Mathf.Max(textureDataColumn1Width, rect.width);
 
 				_columnLabel.text = "Is sRGB (Color Texture)";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
@@ -304,7 +328,7 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.IsSRGB;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column1Width = Mathf.Max(column1Width, rect.width);
+				textureDataColumn1Width = Mathf.Max(textureDataColumn1Width, rect.width);
 
 				_columnLabel.text = "Alpha Source";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
@@ -315,7 +339,7 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.AlphaSource;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column1Width = Mathf.Max(column1Width, rect.width);
+				textureDataColumn1Width = Mathf.Max(textureDataColumn1Width, rect.width);
 
 				_columnLabel.text = "Alpha Is Transparency";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
@@ -326,7 +350,7 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.AlphaIsTransparency;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column1Width = Mathf.Max(column1Width, rect.width);
+				textureDataColumn1Width = Mathf.Max(textureDataColumn1Width, rect.width);
 
 				_columnLabel.text = "Ignore PNG Gamma";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
@@ -337,7 +361,7 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.IgnorePngGamma;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column1Width = Mathf.Max(column1Width, rect.width);
+				textureDataColumn1Width = Mathf.Max(textureDataColumn1Width, rect.width);
 
 				_columnLabel.text = "Read/Write Enabled";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
@@ -348,7 +372,7 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.IsReadable;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column1Width = Mathf.Max(column1Width, rect.width);
+				textureDataColumn1Width = Mathf.Max(textureDataColumn1Width, rect.width);
 
 				// -------------------------------------------
 				rect.y += GROUP_SPACING;
@@ -362,7 +386,7 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.MipMapGenerated;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column1Width = Mathf.Max(column1Width, rect.width);
+				textureDataColumn1Width = Mathf.Max(textureDataColumn1Width, rect.width);
 
 				_columnLabel.text = "Mip Map Filter";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
@@ -373,7 +397,7 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.MipMapFilter;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column1Width = Mathf.Max(column1Width, rect.width);
+				textureDataColumn1Width = Mathf.Max(textureDataColumn1Width, rect.width);
 
 				_columnLabel.text = "Streaming Mip Maps";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
@@ -384,7 +408,7 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.StreamingMipMaps;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column1Width = Mathf.Max(column1Width, rect.width);
+				textureDataColumn1Width = Mathf.Max(textureDataColumn1Width, rect.width);
 
 				_columnLabel.text = "Border Mip Maps";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
@@ -395,7 +419,7 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.BorderMipMaps;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column1Width = Mathf.Max(column1Width, rect.width);
+				textureDataColumn1Width = Mathf.Max(textureDataColumn1Width, rect.width);
 
 				_columnLabel.text = "Preserve Coverage Mip Maps";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
@@ -406,7 +430,7 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.PreserveCoverageMipMaps;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column1Width = Mathf.Max(column1Width, rect.width);
+				textureDataColumn1Width = Mathf.Max(textureDataColumn1Width, rect.width);
 
 				_columnLabel.text = "Fade Mip Maps";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
@@ -417,12 +441,17 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.FadeOutMipMaps;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column1Width = Mathf.Max(column1Width, rect.width);
+				textureDataColumn1Width = Mathf.Max(textureDataColumn1Width, rect.width);
+				textureDataLowestY = Mathf.Max(textureDataLowestY, rect.y);
+
+				#endregion
 
 				// -----------------------------------------------------------------------
 				// column 2
-				rect.x += column1Width + COLUMN_SPACING;
+				rect.x += textureDataColumn1Width + COLUMN_SPACING;
 				rect.y = toggleYStart;
+
+				#region Texture Column 2
 
 				_columnLabel.text = "Imported Width & Height";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
@@ -433,7 +462,7 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.ImportedWidthAndHeight;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column2Width = Mathf.Max(column2Width, rect.width);
+				textureDataColumn2Width = Mathf.Max(textureDataColumn2Width, rect.width);
 
 				_columnLabel.text = "Source Width & Height";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
@@ -444,7 +473,7 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.RealWidthAndHeight;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column2Width = Mathf.Max(column2Width, rect.width);
+				textureDataColumn2Width = Mathf.Max(textureDataColumn2Width, rect.width);
 
 				_columnLabel.text = "Non-Power of 2 Scale";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
@@ -455,7 +484,7 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.NPotScale;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column2Width = Mathf.Max(column2Width, rect.width);
+				textureDataColumn2Width = Mathf.Max(textureDataColumn2Width, rect.width);
 
 				_columnLabel.text = "Max Texture Size";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
@@ -466,7 +495,7 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.MaxTextureSize;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column2Width = Mathf.Max(column2Width, rect.width);
+				textureDataColumn2Width = Mathf.Max(textureDataColumn2Width, rect.width);
 
 				_columnLabel.text = "Resize Algorithm";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
@@ -477,7 +506,7 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.TextureResizeAlgorithm;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column2Width = Mathf.Max(column2Width, rect.width);
+				textureDataColumn2Width = Mathf.Max(textureDataColumn2Width, rect.width);
 
 				// -----------------------------------------------------------------------
 				rect.y += GROUP_SPACING;
@@ -491,7 +520,7 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.SpriteImportMode;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column2Width = Mathf.Max(column2Width, rect.width);
+				textureDataColumn2Width = Mathf.Max(textureDataColumn2Width, rect.width);
 
 				_columnLabel.text = "Sprite Packing Tag";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
@@ -502,7 +531,7 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.SpritePackingTag;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column2Width = Mathf.Max(column2Width, rect.width);
+				textureDataColumn2Width = Mathf.Max(textureDataColumn2Width, rect.width);
 
 				_columnLabel.text = "Sprite Pixels Per Unit";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
@@ -513,7 +542,7 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.SpritePixelsPerUnit;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column2Width = Mathf.Max(column2Width, rect.width);
+				textureDataColumn2Width = Mathf.Max(textureDataColumn2Width, rect.width);
 
 				_columnLabel.text = "Qualifies for Sprite Packing";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
@@ -524,12 +553,17 @@ namespace BuildReportTool.Window.Screen
 					_hoveredTextureDataId = TextureData.DataId.QualifiesForSpritePacking;
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
-				column2Width = Mathf.Max(column2Width, rect.width);
+				textureDataColumn2Width = Mathf.Max(textureDataColumn2Width, rect.width);
+				textureDataLowestY = Mathf.Max(textureDataLowestY, rect.y);
+
+				#endregion
 
 				// -----------------------------------------------------------------------
 				// column 3
-				rect.x += column2Width + COLUMN_SPACING;
+				rect.x += textureDataColumn2Width + COLUMN_SPACING;
 				rect.y = toggleYStart;
+
+				#region Texture Column 3
 
 				_columnLabel.text = "Texture Format";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
@@ -634,6 +668,249 @@ namespace BuildReportTool.Window.Screen
 				}
 				rect.y += rect.height + TOGGLE_SPACING;
 
+				textureDataLowestY = Mathf.Max(textureDataLowestY, rect.y);
+
+				#endregion
+
+				// -----------------------------------------------------------------------
+
+				float meshColumn1Width = 0;
+				float meshColumn2Width = 0;
+				float meshDataLowestY = 0;
+
+				// column 1
+				rect.x = startX;
+				rect.y = textureDataLowestY + 8;
+
+				_columnLabel.text = "Mesh Data Columns:";
+				rect.size = toggleHeaderStyle.CalcSize(_columnLabel);
+				GUI.Label(rect, _columnLabel, toggleHeaderStyle);
+				rect.y += rect.height - 2;
+				toggleYStart = rect.y;
+
+				#region Mesh Column 1
+
+				_columnLabel.text = "Non-Skinned Mesh Count";
+				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
+				rect.width += TOGGLE_EXTRA_WIDTH;
+				BuildReportTool.Options.ShowMeshColumnMeshFilterCount = GUI.Toggle(rect, BuildReportTool.Options.ShowMeshColumnMeshFilterCount, _columnLabel);
+				if (rect.Contains(Event.current.mousePosition))
+				{
+					_hoveredMeshDataId = MeshData.DataId.MeshFilterCount;
+				}
+				rect.y += rect.height + TOGGLE_SPACING;
+				meshColumn1Width = Mathf.Max(meshColumn1Width, rect.width);
+
+				_columnLabel.text = "Skinned Mesh Count";
+				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
+				rect.width += TOGGLE_EXTRA_WIDTH;
+				BuildReportTool.Options.ShowMeshColumnSkinnedMeshRendererCount = GUI.Toggle(rect, BuildReportTool.Options.ShowMeshColumnSkinnedMeshRendererCount, _columnLabel);
+				if (rect.Contains(Event.current.mousePosition))
+				{
+					_hoveredMeshDataId = MeshData.DataId.SkinnedMeshRendererCount;
+				}
+				rect.y += rect.height + TOGGLE_SPACING;
+				meshColumn1Width = Mathf.Max(meshColumn1Width, rect.width);
+
+				meshDataLowestY = Mathf.Max(meshDataLowestY, rect.y);
+
+				#endregion
+
+				// -----------------------------------------------------------------------
+				// column 2
+
+				rect.x += meshColumn1Width + COLUMN_SPACING;
+				rect.y = toggleYStart;
+
+				#region Mesh Column 2
+
+				_columnLabel.text = "Sub-Mesh Count";
+				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
+				rect.width += TOGGLE_EXTRA_WIDTH;
+				BuildReportTool.Options.ShowMeshColumnSubMeshCount = GUI.Toggle(rect, BuildReportTool.Options.ShowMeshColumnSubMeshCount, _columnLabel);
+				if (rect.Contains(Event.current.mousePosition))
+				{
+					_hoveredMeshDataId = MeshData.DataId.SubMeshCount;
+				}
+				rect.y += rect.height + TOGGLE_SPACING;
+				meshColumn2Width = Mathf.Max(meshColumn2Width, rect.width);
+
+				_columnLabel.text = "Vertex Count";
+				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
+				rect.width += TOGGLE_EXTRA_WIDTH;
+				BuildReportTool.Options.ShowMeshColumnVertexCount = GUI.Toggle(rect, BuildReportTool.Options.ShowMeshColumnVertexCount, _columnLabel);
+				if (rect.Contains(Event.current.mousePosition))
+				{
+					_hoveredMeshDataId = MeshData.DataId.VertexCount;
+				}
+				rect.y += rect.height + TOGGLE_SPACING;
+				meshColumn2Width = Mathf.Max(meshColumn2Width, rect.width);
+
+				_columnLabel.text = "Face Count";
+				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
+				rect.width += TOGGLE_EXTRA_WIDTH;
+				BuildReportTool.Options.ShowMeshColumnTriangleCount = GUI.Toggle(rect, BuildReportTool.Options.ShowMeshColumnTriangleCount, _columnLabel);
+				if (rect.Contains(Event.current.mousePosition))
+				{
+					_hoveredMeshDataId = MeshData.DataId.TriangleCount;
+				}
+				rect.y += rect.height + TOGGLE_SPACING;
+				meshColumn2Width = Mathf.Max(meshColumn2Width, rect.width);
+
+				meshDataLowestY = Mathf.Max(meshDataLowestY, rect.y);
+
+				#endregion
+
+				// -----------------------------------------------------------------------
+				// column 3
+
+				rect.x += meshColumn2Width + COLUMN_SPACING;
+				rect.y = toggleYStart;
+
+				#region Mesh Column 3
+
+				_columnLabel.text = "Animation Type";
+				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
+				rect.width += TOGGLE_EXTRA_WIDTH;
+				BuildReportTool.Options.ShowMeshColumnAnimationType = GUI.Toggle(rect, BuildReportTool.Options.ShowMeshColumnAnimationType, _columnLabel);
+				if (rect.Contains(Event.current.mousePosition))
+				{
+					_hoveredMeshDataId = MeshData.DataId.AnimationType;
+				}
+				rect.y += rect.height + TOGGLE_SPACING;
+
+				_columnLabel.text = "Animation Clip Count";
+				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
+				rect.width += TOGGLE_EXTRA_WIDTH;
+				BuildReportTool.Options.ShowMeshColumnAnimationClipCount = GUI.Toggle(rect, BuildReportTool.Options.ShowMeshColumnAnimationClipCount, _columnLabel);
+				if (rect.Contains(Event.current.mousePosition))
+				{
+					_hoveredMeshDataId = MeshData.DataId.AnimationClipCount;
+				}
+				rect.y += rect.height + TOGGLE_SPACING;
+
+				meshDataLowestY = Mathf.Max(meshDataLowestY, rect.y);
+
+				#endregion
+
+				// -----------------------------------------------------------------------
+
+				float prefabColumn1Width = 0;
+				float prefabColumn2Width = 0;
+
+				// column 1
+				rect.x = startX;
+				rect.y = meshDataLowestY + 8;
+
+				_columnLabel.text = "Prefab Data Columns:";
+				rect.size = toggleHeaderStyle.CalcSize(_columnLabel);
+				GUI.Label(rect, _columnLabel, toggleHeaderStyle);
+				rect.y += rect.height - 2;
+				toggleYStart = rect.y;
+
+				#region Prefab Column 1
+
+				_columnLabel.text = "Contribute Global Illumination";
+				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
+				rect.width += TOGGLE_EXTRA_WIDTH;
+				BuildReportTool.Options.ShowPrefabColumnContributeGI = GUI.Toggle(rect, BuildReportTool.Options.ShowPrefabColumnContributeGI, _columnLabel);
+				if (rect.Contains(Event.current.mousePosition))
+				{
+					_hoveredPrefabDataId = PrefabData.DataId.ContributeGI;
+				}
+				rect.y += rect.height + TOGGLE_SPACING;
+				prefabColumn1Width = Mathf.Max(prefabColumn1Width, rect.width);
+
+				_columnLabel.text = "Static Batching";
+				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
+				rect.width += TOGGLE_EXTRA_WIDTH;
+				BuildReportTool.Options.ShowPrefabColumnBatchingStatic = GUI.Toggle(rect, BuildReportTool.Options.ShowPrefabColumnBatchingStatic, _columnLabel);
+				if (rect.Contains(Event.current.mousePosition))
+				{
+					_hoveredPrefabDataId = PrefabData.DataId.BatchingStatic;
+				}
+				rect.y += rect.height + TOGGLE_SPACING;
+				prefabColumn1Width = Mathf.Max(prefabColumn1Width, rect.width);
+
+				_columnLabel.text = "Reflection Probe Static";
+				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
+				rect.width += TOGGLE_EXTRA_WIDTH;
+				BuildReportTool.Options.ShowPrefabColumnReflectionProbeStatic = GUI.Toggle(rect, BuildReportTool.Options.ShowPrefabColumnReflectionProbeStatic, _columnLabel);
+				if (rect.Contains(Event.current.mousePosition))
+				{
+					_hoveredPrefabDataId = PrefabData.DataId.ReflectionProbeStatic;
+				}
+				rect.y += rect.height + TOGGLE_SPACING;
+				prefabColumn1Width = Mathf.Max(prefabColumn1Width, rect.width);
+
+				#endregion
+
+				// -----------------------------------------------------------------------
+				// column 2
+
+				rect.x += prefabColumn1Width + COLUMN_SPACING;
+				rect.y = toggleYStart;
+
+				#region Prefab Column 2
+
+				_columnLabel.text = "Occluder Static";
+				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
+				rect.width += TOGGLE_EXTRA_WIDTH;
+				BuildReportTool.Options.ShowPrefabColumnOccluderStatic = GUI.Toggle(rect, BuildReportTool.Options.ShowPrefabColumnOccluderStatic, _columnLabel);
+				if (rect.Contains(Event.current.mousePosition))
+				{
+					_hoveredPrefabDataId = PrefabData.DataId.OccluderStatic;
+				}
+				rect.y += rect.height + TOGGLE_SPACING;
+				prefabColumn2Width = Mathf.Max(prefabColumn2Width, rect.width);
+
+				_columnLabel.text = "Occludee Static";
+				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
+				rect.width += TOGGLE_EXTRA_WIDTH;
+				BuildReportTool.Options.ShowPrefabColumnOccludeeStatic = GUI.Toggle(rect, BuildReportTool.Options.ShowPrefabColumnOccludeeStatic, _columnLabel);
+				if (rect.Contains(Event.current.mousePosition))
+				{
+					_hoveredPrefabDataId = PrefabData.DataId.OccludeeStatic;
+				}
+				rect.y += rect.height + TOGGLE_SPACING;
+				prefabColumn2Width = Mathf.Max(prefabColumn2Width, rect.width);
+
+				#endregion
+
+				// -----------------------------------------------------------------------
+				// column 3
+
+				rect.x += prefabColumn2Width + COLUMN_SPACING;
+				rect.y = toggleYStart;
+
+				#region Prefab Column 3
+
+				_columnLabel.text = "Navigation Static";
+				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
+				rect.width += TOGGLE_EXTRA_WIDTH;
+				BuildReportTool.Options.ShowPrefabColumnNavigationStatic = GUI.Toggle(rect, BuildReportTool.Options.ShowPrefabColumnNavigationStatic, _columnLabel);
+				if (rect.Contains(Event.current.mousePosition))
+				{
+					_hoveredPrefabDataId = PrefabData.DataId.NavigationStatic;
+				}
+				rect.y += rect.height + TOGGLE_SPACING;
+				prefabColumn2Width = Mathf.Max(prefabColumn2Width, rect.width);
+
+				_columnLabel.text = "Off-Mesh Link Generation";
+				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
+				rect.width += TOGGLE_EXTRA_WIDTH;
+				BuildReportTool.Options.ShowPrefabColumnOffMeshLinkGeneration = GUI.Toggle(rect, BuildReportTool.Options.ShowPrefabColumnOffMeshLinkGeneration, _columnLabel);
+				if (rect.Contains(Event.current.mousePosition))
+				{
+					_hoveredPrefabDataId = PrefabData.DataId.OffMeshLinkGeneration;
+				}
+				rect.y += rect.height + TOGGLE_SPACING;
+				prefabColumn2Width = Mathf.Max(prefabColumn2Width, rect.width);
+
+				#endregion
+
+				// -----------------------------------------------------------------------
+
 				// input catcher
 				GUI.Button(columnOptionsBg, GUIContent.none, "HiddenScrollbar");
 			}
@@ -650,10 +927,16 @@ namespace BuildReportTool.Window.Screen
 				if (_mouseIsOnOverlayControl)
 				{
 					_hoveredTextureDataId = TextureData.DataId.None;
+					_hoveredMeshDataId = MeshData.DataId.None;
+					_hoveredPrefabDataId = PrefabData.DataId.None;
 					_overridenTextureDataTooltipText = null;
 				}
 
-				var bgStyle = GUI.skin.GetStyle(isOverlay ? "PopupPanel" : "HiddenScrollbar");
+				var bgStyle = GUI.skin.FindStyle(isOverlay ? "PopupPanel" : "HiddenScrollbar");
+				if (bgStyle == null)
+				{
+					bgStyle = GUI.skin.box;
+				}
 				GUI.Box(searchOptionsBg, GUIContent.none, bgStyle);
 
 
@@ -663,10 +946,27 @@ namespace BuildReportTool.Window.Screen
 
 				float startX = rect.x;
 
-				var toggleHeaderStyle = GUI.skin.GetStyle("Header3");
-				var radioLeftStyle = GUI.skin.GetStyle("RadioLeft");
-				var radioMidStyle = GUI.skin.GetStyle("RadioMiddle");
-				var radioRightStyle = GUI.skin.GetStyle("RadioRight");
+				var toggleHeaderStyle = GUI.skin.FindStyle("Header3");
+				var radioLeftStyle = GUI.skin.FindStyle("RadioLeft");
+				var radioMidStyle = GUI.skin.FindStyle("RadioMiddle");
+				var radioRightStyle = GUI.skin.FindStyle("RadioRight");
+
+				if (toggleHeaderStyle == null)
+				{
+					toggleHeaderStyle = GUI.skin.label;
+				}
+				if (radioLeftStyle == null)
+				{
+					radioLeftStyle = GUI.skin.toggle;
+				}
+				if (radioMidStyle == null)
+				{
+					radioMidStyle = GUI.skin.toggle;
+				}
+				if (radioRightStyle == null)
+				{
+					radioRightStyle = GUI.skin.toggle;
+				}
 
 				float searchTypeHeight = 0;
 
@@ -729,6 +1029,7 @@ namespace BuildReportTool.Window.Screen
 				_columnLabel.text = "Search through filenames only\n(ignore path when searching)";
 				rect.size = GUI.skin.toggle.CalcSize(_columnLabel);
 				rect.width += TOGGLE_EXTRA_WIDTH;
+				rect.height += 3;
 				var newSearchFilenameOnly = GUI.Toggle(rect, BuildReportTool.Options.SearchFilenameOnly, _columnLabel);
 				if (newSearchFilenameOnly != BuildReportTool.Options.SearchFilenameOnly)
 				{
@@ -761,10 +1062,10 @@ namespace BuildReportTool.Window.Screen
 		}
 
 		public override void DrawGUI(Rect position,
-			BuildInfo buildReportToDisplay, AssetDependencies assetDependencies, TextureData textureData,
-			UnityBuildReport unityBuildReport,
-			out bool requestRepaint
-		)
+			BuildInfo buildReportToDisplay, AssetDependencies assetDependencies,
+			TextureData textureData, MeshData meshData, PrefabData prefabData,
+			UnityBuildReport unityBuildReport, BuildReportTool.ExtraData extraData,
+			out bool requestRepaint)
 		{
 			if (buildReportToDisplay == null || !buildReportToDisplay.HasUsedAssets)
 			{
@@ -775,7 +1076,7 @@ namespace BuildReportTool.Window.Screen
 #if BRT_ASSET_LIST_SCREEN_DEBUG
 			if (_debugText == null)
 			{
-				_debugText = new StringBuilder();
+				_debugText = new System.Text.StringBuilder();
 			}
 			else
 			{
@@ -839,8 +1140,8 @@ namespace BuildReportTool.Window.Screen
 
 			if (buildReportToDisplay.HasUsedAssets)
 			{
-				DrawAssetList(position, buildReportToDisplay, assetDependencies, textureData, listToDisplay, fileFilterGroupToUse,
-					BuildReportTool.Options.AssetListPaginationLength);
+				DrawAssetList(position, buildReportToDisplay, assetDependencies, textureData, meshData, prefabData,
+					listToDisplay, fileFilterGroupToUse, BuildReportTool.Options.AssetListPaginationLength);
 				GUILayout.FlexibleSpace();
 			}
 
@@ -952,6 +1253,18 @@ namespace BuildReportTool.Window.Screen
 			// --------------------------
 			// actual contents of Bottom Bar
 
+			var statusBarBgStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.STATUS_BAR_BG_STYLE_NAME);
+			if (statusBarBgStyle == null)
+			{
+				statusBarBgStyle = GUI.skin.box;
+			}
+
+			var statusBarLabelStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.STATUS_BAR_LABEL_STYLE_NAME);
+			if (statusBarLabelStyle == null)
+			{
+				statusBarLabelStyle = GUI.skin.label;
+			}
+
 			string selectedInfoLabel = string.Format(
 				"{0}{1}. {2}{3} ({4}%)",
 				Labels.SELECTED_QTY_LABEL,
@@ -961,9 +1274,9 @@ namespace BuildReportTool.Window.Screen
 
 			GUILayout.BeginArea(bottomBarRect);
 
-			GUILayout.BeginHorizontal(BuildReportTool.Window.Settings.STATUS_BAR_BG_STYLE_NAME,
+			GUILayout.BeginHorizontal(statusBarBgStyle,
 				BRT_BuildReportWindow.LayoutNone);
-			GUILayout.Label(selectedInfoLabel, BuildReportTool.Window.Settings.STATUS_BAR_LABEL_STYLE_NAME,
+			GUILayout.Label(selectedInfoLabel, statusBarLabelStyle,
 				BRT_BuildReportWindow.LayoutNone);
 			GUILayout.FlexibleSpace();
 
@@ -971,14 +1284,14 @@ namespace BuildReportTool.Window.Screen
 			{
 				GUILayout.Label(
 					"Hold Ctrl to zoom-in on the thumbnail. Press Alt to show/hide alpha transparency.",
-					BuildReportTool.Window.Settings.STATUS_BAR_LABEL_STYLE_NAME,
+					statusBarLabelStyle,
 					BRT_BuildReportWindow.LayoutNone);
 			}
 			else
 			{
 				GUILayout.Label(
 					"Click on an asset's name to include it in size calculations or batch deletions. Shift-click to select many. Ctrl-click to toggle selection.",
-					BuildReportTool.Window.Settings.STATUS_BAR_LABEL_STYLE_NAME,
+					statusBarLabelStyle,
 					BRT_BuildReportWindow.LayoutNone);
 			}
 
@@ -1008,13 +1321,27 @@ namespace BuildReportTool.Window.Screen
 			                                         _assetUsageAncestryHoveredIdx != -1 ||
 			                                         _assetUserEntryHoveredIdx != -1);
 
+#if BRT_ASSET_LIST_SCREEN_DEBUG
+			_debugText.AppendFormat("shouldShowAssetEndUsersTooltipNow: {0}\n",
+				shouldShowAssetEndUsersTooltipNow);
+			_debugText.AppendFormat("_mouseIsOnOverlayControl: {0}\n",
+				_mouseIsOnOverlayControl);
+			_debugText.AppendFormat("_overridenTextureDataTooltipText: {0}\n",
+				_overridenTextureDataTooltipText);
+			_debugText.AppendFormat("HoveredAssetEntryPath: {0}\n",
+				BRT_BuildReportWindow.HoveredAssetEntryPath);
+#endif
 
 			if (Event.current.type == EventType.Repaint)
 			{
 				if (!string.IsNullOrEmpty(_overridenTextureDataTooltipText))
 				{
 					_textureDataTooltipLabel.text = _overridenTextureDataTooltipText;
-					var tooltipTextStyle = GUI.skin.GetStyle("TooltipText");
+					var tooltipTextStyle = GUI.skin.FindStyle("TooltipText");
+					if (tooltipTextStyle == null)
+					{
+						tooltipTextStyle = GUI.skin.box;
+					}
 
 					const int MAX_TOOLTIP_WIDTH = 240;
 					var tooltipSize = tooltipTextStyle.CalcSize(_textureDataTooltipLabel);
@@ -1042,12 +1369,31 @@ namespace BuildReportTool.Window.Screen
 					// draw only thumbnail in tooltip
 					BRT_BuildReportWindow.DrawThumbnailTooltip(position, textureData);
 				}
-				else if (_hoveredTextureDataId != BuildReportTool.TextureData.DataId.None)
+				else if (_hoveredTextureDataId != BuildReportTool.TextureData.DataId.None ||
+				         _hoveredMeshDataId != BuildReportTool.MeshData.DataId.None ||
+				         _hoveredPrefabDataId != BuildReportTool.PrefabData.DataId.None)
 				{
-					_textureDataTooltipLabel.text = BuildReportTool.TextureData.GetTooltipTextFromId(_hoveredTextureDataId);
+					if (_hoveredTextureDataId != BuildReportTool.TextureData.DataId.None)
+					{
+						_textureDataTooltipLabel.text =
+							BuildReportTool.TextureData.GetTooltipTextFromId(_hoveredTextureDataId);
+					}
+					else if (_hoveredMeshDataId != BuildReportTool.MeshData.DataId.None)
+					{
+						_textureDataTooltipLabel.text = BuildReportTool.MeshData.GetTooltipTextFromId(_hoveredMeshDataId);
+					}
+					else if (_hoveredPrefabDataId != BuildReportTool.PrefabData.DataId.None)
+					{
+						_textureDataTooltipLabel.text = BuildReportTool.PrefabData.GetTooltipTextFromId(_hoveredPrefabDataId);
+					}
+
 					if (!string.IsNullOrEmpty(_textureDataTooltipLabel.text))
 					{
-						var tooltipTextStyle = GUI.skin.GetStyle("TooltipText");
+						var tooltipTextStyle = GUI.skin.FindStyle("TooltipText");
+						if (tooltipTextStyle == null)
+						{
+							tooltipTextStyle = GUI.skin.box;
+						}
 
 						const int MAX_TOOLTIP_WIDTH = 400;
 						var tooltipSize = tooltipTextStyle.CalcSize(_textureDataTooltipLabel);
@@ -1073,10 +1419,17 @@ namespace BuildReportTool.Window.Screen
 		if (_showDebugText)
 		{
 			_debugLabel.text = _debugText.ToString();
-			var debugStyle = GUI.skin.GetStyle("DebugOverlay");
+			var debugStyle = GUI.skin.FindStyle("DebugOverlay");
+			if (debugStyle == null)
+			{
+				debugStyle = GUI.skin.box;
+			}
 			var debugLabelSize = debugStyle.CalcSize(_debugLabel);
 
+			var prevBgColor = GUI.backgroundColor;
+			GUI.backgroundColor = new Color(1, 1, 1, 0.85f);
 			GUI.Label(new Rect(position.width - debugLabelSize.x, 0, debugLabelSize.x, debugLabelSize.y), _debugLabel, debugStyle);
+			GUI.backgroundColor = prevBgColor;
 		}
 #endif
 		}
@@ -1189,6 +1542,116 @@ namespace BuildReportTool.Window.Screen
 			}
 		}
 
+		void ToggleSort(BuildReportTool.AssetList assetList, BuildReportTool.MeshData meshData,
+			BuildReportTool.MeshData.DataId newSortType, BuildReportTool.FileFilterGroup fileFilters)
+		{
+			if (_currentSortType != BuildReportTool.AssetList.SortType.MeshData ||
+			    _currentMeshDataSortType != newSortType)
+			{
+				_currentSortType = BuildReportTool.AssetList.SortType.MeshData;
+				_currentMeshDataSortType = newSortType;
+				_currentSortOrder = BuildReportTool.AssetList.SortOrder.Descending; // descending by default
+			}
+			else
+			{
+				// already in this sort type
+				// now toggle the sort order
+				if (_currentSortOrder == BuildReportTool.AssetList.SortOrder.Descending)
+				{
+					_currentSortOrder = BuildReportTool.AssetList.SortOrder.Ascending;
+				}
+				else if (_currentSortOrder == BuildReportTool.AssetList.SortOrder.Ascending)
+				{
+					if (_searchResults != null)
+					{
+						// clicked again while sort order is in ascending
+						// now disable it (which means sorting goes back to sort by search rank)
+						_currentSortType = BuildReportTool.AssetList.SortType.None;
+						_currentSortOrder = BuildReportTool.AssetList.SortOrder.None;
+						_currentMeshDataSortType = BuildReportTool.MeshData.DataId.None;
+					}
+					else
+					{
+						_currentSortOrder = BuildReportTool.AssetList.SortOrder.Descending;
+					}
+				}
+			}
+
+			if (_searchResults != null)
+			{
+				if (_currentSortType == BuildReportTool.AssetList.SortType.None &&
+				    _currentMeshDataSortType == BuildReportTool.MeshData.DataId.None)
+				{
+					// no column used as sort
+					// revert to sorting by search rank
+					SortBySearchRank(_searchResults, _lastSearchText);
+				}
+				else
+				{
+					BuildReportTool.AssetListUtility.SortAssetList(_searchResults, meshData, _currentMeshDataSortType, _currentSortOrder);
+				}
+			}
+			else
+			{
+				assetList.Sort(meshData, _currentMeshDataSortType, _currentSortOrder, fileFilters);
+			}
+		}
+
+		void ToggleSort(BuildReportTool.AssetList assetList, BuildReportTool.PrefabData prefabData,
+			BuildReportTool.PrefabData.DataId newSortType, BuildReportTool.FileFilterGroup fileFilters)
+		{
+			if (_currentSortType != BuildReportTool.AssetList.SortType.PrefabData ||
+			    _currentPrefabDataSortType != newSortType)
+			{
+				_currentSortType = BuildReportTool.AssetList.SortType.PrefabData;
+				_currentPrefabDataSortType = newSortType;
+				_currentSortOrder = BuildReportTool.AssetList.SortOrder.Descending; // descending by default
+			}
+			else
+			{
+				// already in this sort type
+				// now toggle the sort order
+				if (_currentSortOrder == BuildReportTool.AssetList.SortOrder.Descending)
+				{
+					_currentSortOrder = BuildReportTool.AssetList.SortOrder.Ascending;
+				}
+				else if (_currentSortOrder == BuildReportTool.AssetList.SortOrder.Ascending)
+				{
+					if (_searchResults != null)
+					{
+						// clicked again while sort order is in ascending
+						// now disable it (which means sorting goes back to sort by search rank)
+						_currentSortType = BuildReportTool.AssetList.SortType.None;
+						_currentSortOrder = BuildReportTool.AssetList.SortOrder.None;
+						_currentPrefabDataSortType = BuildReportTool.PrefabData.DataId.None;
+					}
+					else
+					{
+						_currentSortOrder = BuildReportTool.AssetList.SortOrder.Descending;
+					}
+				}
+			}
+
+			if (_searchResults != null)
+			{
+				if (_currentSortType == BuildReportTool.AssetList.SortType.None &&
+				    _currentPrefabDataSortType == BuildReportTool.PrefabData.DataId.None)
+				{
+					// no column used as sort
+					// revert to sorting by search rank
+					SortBySearchRank(_searchResults, _lastSearchText);
+				}
+				else
+				{
+					BuildReportTool.AssetListUtility.SortAssetList(_searchResults, prefabData, _currentPrefabDataSortType, _currentSortOrder);
+				}
+			}
+			else
+			{
+				assetList.Sort(prefabData, _currentPrefabDataSortType, _currentSortOrder, fileFilters);
+			}
+		}
+
 		void RefreshConfiguredFileFilters()
 		{
 			// reload used FileFilterGroup but save current used filter idx
@@ -1217,15 +1680,73 @@ namespace BuildReportTool.Window.Screen
 				return;
 			}
 
+			Texture2D prevArrow;
+			var prevArrowStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.BIG_LEFT_ARROW_ICON_STYLE_NAME);
+			if (prevArrowStyle != null)
+			{
+				prevArrow = prevArrowStyle.normal.background;
+			}
+			else
+			{
+				prevArrow = null;
+			}
 
-			Texture2D prevArrow = GUI.skin.GetStyle(BuildReportTool.Window.Settings.BIG_LEFT_ARROW_ICON_STYLE_NAME).normal.background;
-			Texture2D nextArrow = GUI.skin.GetStyle(BuildReportTool.Window.Settings.BIG_RIGHT_ARROW_ICON_STYLE_NAME).normal.background;
-			Texture2D column = GUI.skin.GetStyle(BuildReportTool.Window.Settings.COLUMN_ICON_STYLE_NAME).normal.background;
-			_showColumnLabel.image = column;
+			Texture2D nextArrow;
+			var  nextArrowStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.BIG_RIGHT_ARROW_ICON_STYLE_NAME);
+			if (nextArrowStyle != null)
+			{
+				nextArrow = nextArrowStyle.normal.background;
+			}
+			else
+			{
+				nextArrow = null;
+			}
 
-			GUILayout.BeginHorizontal(GUILayout.Height(11));
+			var columnStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.COLUMN_ICON_STYLE_NAME);
+			if (columnStyle != null)
+			{
+				_showColumnLabel.image = columnStyle.normal.background;
+			}
 
-			GUILayout.Label(" ", BuildReportTool.Window.Settings.TOP_BAR_BG_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+			var topBarBgStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.TOP_BAR_BG_STYLE_NAME);
+			if (topBarBgStyle == null)
+			{
+				topBarBgStyle = GUI.skin.label;
+			}
+
+			var topBarButtonStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.TOP_BAR_BTN_STYLE_NAME);
+			if (topBarButtonStyle == null)
+			{
+				topBarButtonStyle = GUI.skin.button;
+			}
+
+			var topBarLabelStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.TOP_BAR_LABEL_STYLE_NAME);
+			if (topBarLabelStyle == null)
+			{
+				topBarLabelStyle = GUI.skin.label;
+			}
+
+			var searchDropdownStyle = GUI.skin.FindStyle("TextField-Search-DropDown");
+			if (searchDropdownStyle == null)
+			{
+				searchDropdownStyle = GUI.skin.label;
+			}
+
+			var searchTextStyle = GUI.skin.FindStyle("TextField-Search-Text");
+			if (searchTextStyle == null)
+			{
+				searchTextStyle = GUI.skin.textField;
+			}
+
+			var searchClearStyle = GUI.skin.FindStyle("TextField-Search-ClearButton");
+			if (searchClearStyle == null)
+			{
+				searchClearStyle = GUI.skin.button;
+			}
+
+			GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutHeight11);
+
+			GUILayout.Label(" ", topBarBgStyle, BRT_BuildReportWindow.LayoutNone);
 
 			// ------------------------------------------------------------------------------------------------------
 			// File Filters
@@ -1245,23 +1766,26 @@ namespace BuildReportTool.Window.Screen
 			// ------------------------------------------------------------------------------------------------------
 			// Unused Assets Batch
 
-			if (IsShowingUnusedAssets)
+			if (IsShowingUnusedAssets && buildReportToDisplay.ProcessUnusedAssetsInBatches)
 			{
-				int batchNumber = buildReportToDisplay.UnusedAssetsBatchNum + 1;
+				int batchNumber = buildReportToDisplay.UnusedAssetsBatchIdx + 1;
 
-				if (GUILayout.Button(prevArrow, BuildReportTool.Window.Settings.TOP_BAR_BTN_STYLE_NAME,
-					    BRT_BuildReportWindow.LayoutNone) && (batchNumber - 1 >= 1))
+				bool prevButton = prevArrow != null
+					? GUILayout.Button(prevArrow, topBarButtonStyle)
+					: GUILayout.Button("Previous", topBarButtonStyle);
+				if (prevButton && (batchNumber - 1 >= 1))
 				{
 					// move to previous batch
 					BuildReportTool.ReportGenerator.MoveUnusedAssetsBatchToPrev(buildReportToDisplay, fileFilterGroupToUse);
 				}
 
 				string batchLabel = string.Format("Batch {0}", batchNumber.ToString());
-				GUILayout.Label(batchLabel, BuildReportTool.Window.Settings.TOP_BAR_LABEL_STYLE_NAME,
-					BRT_BuildReportWindow.LayoutNone);
+				GUILayout.Label(batchLabel, topBarLabelStyle);
 
-				if (GUILayout.Button(nextArrow, BuildReportTool.Window.Settings.TOP_BAR_BTN_STYLE_NAME,
-					BRT_BuildReportWindow.LayoutNone))
+				bool nextButton = nextArrow != null
+					? GUILayout.Button(nextArrow, topBarButtonStyle)
+					: GUILayout.Button("Next", topBarButtonStyle);
+				if (nextButton)
 				{
 					// move to next batch
 					// (possible to have no new batch anymore. if so, it will just fail silently)
@@ -1294,7 +1818,7 @@ namespace BuildReportTool.Window.Screen
 				                 ? _searchViewOffset
 				                 : assetListUsed.GetViewOffsetForDisplayedList(fileFilterGroupToUse);
 
-			if (GUILayout.Button(prevArrow, BuildReportTool.Window.Settings.TOP_BAR_BTN_STYLE_NAME,
+			if (GUILayout.Button(prevArrow, topBarButtonStyle,
 				    BRT_BuildReportWindow.LayoutNone) &&
 			    (viewOffset - BuildReportTool.Options.AssetListPaginationLength >= 0))
 			{
@@ -1344,13 +1868,13 @@ namespace BuildReportTool.Window.Screen
 					assetListLength.ToString(assetCountDigitNumFormat));
 			}
 
-			if (GUILayout.Button(paginateLabel, BuildReportTool.Window.Settings.TOP_BAR_LABEL_STYLE_NAME,
+			if (GUILayout.Button(paginateLabel, topBarLabelStyle,
 				BRT_BuildReportWindow.LayoutNone))
 			{
 				_showPageNumbers = !_showPageNumbers;
 			}
 
-			if (GUILayout.Button(nextArrow, BuildReportTool.Window.Settings.TOP_BAR_BTN_STYLE_NAME,
+			if (GUILayout.Button(nextArrow, topBarButtonStyle,
 				    BRT_BuildReportWindow.LayoutNone) &&
 			    (viewOffset + BuildReportTool.Options.AssetListPaginationLength < assetListLength))
 			{
@@ -1369,11 +1893,10 @@ namespace BuildReportTool.Window.Screen
 
 			// ------------------------------------------------------------------------------------------------------
 
-
 			GUILayout.FlexibleSpace();
 
 			var newShowColumnOptions = GUILayout.Toggle(_showColumnOptions, _showColumnLabel,
-				BuildReportTool.Window.Settings.TOP_BAR_BTN_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+				topBarButtonStyle, BRT_BuildReportWindow.LayoutNone);
 			if (newShowColumnOptions != _showColumnOptions)
 			{
 				_showColumnOptions = newShowColumnOptions;
@@ -1387,7 +1910,7 @@ namespace BuildReportTool.Window.Screen
 				_showColumnOptionButtonRect = GUILayoutUtility.GetLastRect();
 			}
 
-			var newSearchOptions = GUILayout.Toggle(_showSearchOptions, GUIContent.none, "TextField-Search-DropDown",
+			var newSearchOptions = GUILayout.Toggle(_showSearchOptions, GUIContent.none, searchDropdownStyle,
 				BRT_BuildReportWindow.LayoutNone);
 			if (newSearchOptions != _showSearchOptions)
 			{
@@ -1401,9 +1924,9 @@ namespace BuildReportTool.Window.Screen
 			{
 				_searchTextfieldRect = GUILayoutUtility.GetLastRect();
 			}
-			_searchTextInput = GUILayout.TextField(_searchTextInput, "TextField-Search-Text",
+			_searchTextInput = GUILayout.TextField(_searchTextInput, searchTextStyle,
 				BRT_BuildReportWindow.LayoutMinWidth200);
-			if (GUILayout.Button(string.Empty, "TextField-Search-ClearButton", BRT_BuildReportWindow.LayoutNone))
+			if (GUILayout.Button(GUIContent.none, searchClearStyle, BRT_BuildReportWindow.LayoutNone))
 			{
 				ClearSearch();
 			}
@@ -1418,7 +1941,7 @@ namespace BuildReportTool.Window.Screen
 
 			if ((_currentListDisplayed != ListToDisplay.UsedAssets) &&
 			    GUILayout.Button(Labels.RECALC_IMPORTED_SIZES,
-				    BuildReportTool.Window.Settings.TOP_BAR_BTN_STYLE_NAME, BRT_BuildReportWindow.LayoutNone))
+				    topBarButtonStyle, BRT_BuildReportWindow.LayoutNone))
 			{
 				assetListUsed.PopulateImportedSizes();
 			}
@@ -1427,7 +1950,7 @@ namespace BuildReportTool.Window.Screen
 			    BuildReportTool.Options.GetSizeBeforeBuildForUsedAssets &&
 			    (_currentListDisplayed == ListToDisplay.UsedAssets) &&
 			    GUILayout.Button(Labels.RECALC_SIZE_BEFORE_BUILD,
-				    BuildReportTool.Window.Settings.TOP_BAR_BTN_STYLE_NAME, BRT_BuildReportWindow.LayoutNone))
+				    topBarButtonStyle, BRT_BuildReportWindow.LayoutNone))
 			{
 				assetListUsed.PopulateSizeInAssetsFolder();
 			}
@@ -1439,13 +1962,13 @@ namespace BuildReportTool.Window.Screen
 			// Selection buttons
 
 			if (GUILayout.Button(Labels.SELECT_ALL_LABEL,
-				BuildReportTool.Window.Settings.TOP_BAR_BTN_STYLE_NAME, BRT_BuildReportWindow.LayoutNone))
+				    topBarButtonStyle, BRT_BuildReportWindow.LayoutNone))
 			{
 				assetListUsed.AddAllDisplayedToSumSelection(fileFilterGroupToUse);
 			}
 
 			if (GUILayout.Button(Labels.SELECT_NONE_LABEL,
-				BuildReportTool.Window.Settings.TOP_BAR_BTN_STYLE_NAME, BRT_BuildReportWindow.LayoutNone))
+				    topBarButtonStyle, BRT_BuildReportWindow.LayoutNone))
 			{
 				assetListUsed.ClearSelection();
 				_assetListEntryLastClickedIdx = -1;
@@ -1463,14 +1986,14 @@ namespace BuildReportTool.Window.Screen
 				GUI.backgroundColor = Color.red;
 				const string DEL_SELECTED_LABEL = "Delete selected";
 				if (GUILayout.Button(DEL_SELECTED_LABEL,
-					BuildReportTool.Window.Settings.TOP_BAR_BTN_STYLE_NAME, BRT_BuildReportWindow.LayoutNone))
+					    topBarButtonStyle, BRT_BuildReportWindow.LayoutNone))
 				{
 					InitiateDeleteSelectedUsed(buildReportToDisplay);
 				}
 
 				const string DELETE_ALL_LABEL = "Delete all";
 				if (GUILayout.Button(DELETE_ALL_LABEL,
-					BuildReportTool.Window.Settings.TOP_BAR_BTN_STYLE_NAME, BRT_BuildReportWindow.LayoutNone))
+					    topBarButtonStyle, BRT_BuildReportWindow.LayoutNone))
 				{
 					InitiateDeleteAllUnused(buildReportToDisplay);
 				}
@@ -1487,7 +2010,7 @@ namespace BuildReportTool.Window.Screen
 		}
 
 
-		string GetColumnHeaderStyle(BuildReportTool.AssetList.SortType sortTypeNeeded)
+		GUIStyle GetColumnHeaderStyle(BuildReportTool.AssetList.SortType sortTypeNeeded)
 		{
 			string styleResult = BuildReportTool.Window.Settings.LIST_COLUMN_HEADER_STYLE_NAME;
 
@@ -1503,11 +2026,18 @@ namespace BuildReportTool.Window.Screen
 				}
 			}
 
-			return styleResult;
+			var style = GUI.skin.FindStyle(styleResult);
+			if (style == null)
+			{
+				style = GUI.skin.label;
+			}
+
+			return style;
 		}
 
 		void DrawAssetList(Rect position,
-			BuildReportTool.BuildInfo buildReportToDisplay, BuildReportTool.AssetDependencies assetDependencies, BuildReportTool.TextureData textureData,
+			BuildReportTool.BuildInfo buildReportToDisplay, BuildReportTool.AssetDependencies assetDependencies,
+			BuildReportTool.TextureData textureData, BuildReportTool.MeshData meshData, BuildReportTool.PrefabData prefabData,
 			BuildReportTool.AssetList list, BuildReportTool.FileFilterGroup filter, int length)
 		{
 			if (list == null)
@@ -1519,6 +2049,24 @@ namespace BuildReportTool.Window.Screen
 			{
 				DrawCentralMessage(position, "No search results");
 				return;
+			}
+
+			var listEntryStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_SMALL_STYLE_NAME);
+			if (listEntryStyle == null)
+			{
+				listEntryStyle = GUI.skin.label;
+			}
+
+			var listAltEntryStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_SMALL_ALT_STYLE_NAME);
+			if (listAltEntryStyle == null)
+			{
+				listAltEntryStyle = GUI.skin.label;
+			}
+
+			var listSelectedEntryStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_SMALL_SELECTED_NAME);
+			if (listSelectedEntryStyle == null)
+			{
+				listSelectedEntryStyle = GUI.skin.label;
 			}
 
 			BuildReportTool.SizePart[] assetListToUse;
@@ -1539,15 +2087,45 @@ namespace BuildReportTool.Window.Screen
 				return;
 			}
 
+			var messageStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME);
+			if (messageStyle == null)
+			{
+				messageStyle = GUI.skin.label;
+			}
+
 			if (assetListToUse.Length == 0)
 			{
 				GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutNone);
 				GUILayout.Space(10);
 				GUILayout.Label(Labels.NO_FILES_FOR_THIS_CATEGORY_LABEL,
-					BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+					messageStyle, BRT_BuildReportWindow.LayoutNone);
 				GUILayout.EndHorizontal();
 
 				return;
+			}
+
+			var hiddenHorizontalScrollbarStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME);
+			if (hiddenHorizontalScrollbarStyle == null)
+			{
+				hiddenHorizontalScrollbarStyle = GUI.skin.horizontalScrollbar;
+			}
+
+			var hiddenVerticalScrollbarStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME);
+			if (hiddenVerticalScrollbarStyle == null)
+			{
+				hiddenVerticalScrollbarStyle = GUI.skin.verticalScrollbar;
+			}
+
+			var textureStyle = GUI.skin.FindStyle("DrawTexture");
+			if (textureStyle == null)
+			{
+				textureStyle = GUI.skin.label;
+			}
+
+			var listButtonStyle = GUI.skin.FindStyle("ListButton");
+			if (listButtonStyle == null)
+			{
+				listButtonStyle = GUI.skin.button;
 			}
 
 			EditorGUIUtility.SetIconSize(BRT_BuildReportWindow.IconSize);
@@ -1571,17 +2149,28 @@ namespace BuildReportTool.Window.Screen
 			                         textureData != null &&
 			                         textureData.HasContents;
 
+			var showMeshColumns = filter.SelectedFilterIdx >= 0 &&
+			                      filter.GetSelectedFilterLabel() == BuildReportTool.Options.FileFilterNameForMeshData &&
+			                      meshData != null &&
+			                      meshData.HasContents;
+
+			var showPrefabColumns = filter.SelectedFilterIdx >= 0 &&
+			                        filter.GetSelectedFilterLabel() == BuildReportTool.Options.FileFilterNameForPrefabData &&
+			                        prefabData != null &&
+			                        prefabData.HasContents;
+
 			// --------------------------------------------------------------------------------------------------------
 
 			GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutNone);
 
 			// --------------------------------------------------------------------------------------------------------
-			// column: asset path and name
+
+			#region Column: Asset Path and Name
 			GUILayout.BeginVertical(BRT_BuildReportWindow.LayoutNone);
 			var useAlt = false;
 
+			#region Header
 			GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutNone);
-
 
 			Rect assetPathCheckboxRect = _assetPathColumnHeaderRect;
 			assetPathCheckboxRect.x += 5;
@@ -1591,7 +2180,7 @@ namespace BuildReportTool.Window.Screen
 
 			BuildReportTool.Options.ShowColumnAssetPath = GUI.Toggle(assetPathCheckboxRect, BuildReportTool.Options.ShowColumnAssetPath, _assetPathCheckboxLabel);
 
-			string sortTypeAssetFullPathStyleName = GetColumnHeaderStyle(BuildReportTool.AssetList.SortType.AssetFullPath);
+			var sortTypeAssetFullPathStyleName = GetColumnHeaderStyle(BuildReportTool.AssetList.SortType.AssetFullPath);
 			if (GUILayout.Button("     Asset Path", sortTypeAssetFullPathStyleName,
 				BRT_BuildReportWindow.LayoutListHeight))
 			{
@@ -1611,21 +2200,22 @@ namespace BuildReportTool.Window.Screen
 
 			// -----------------------------------------------------------------
 
-			string sortTypeAssetFilenameStyleName = GetColumnHeaderStyle(BuildReportTool.AssetList.SortType.AssetFilename);
+			var sortTypeAssetFilenameStyleName = GetColumnHeaderStyle(BuildReportTool.AssetList.SortType.AssetFilename);
 			if (GUILayout.Button("Asset Filename", sortTypeAssetFilenameStyleName, BRT_BuildReportWindow.LayoutListHeight))
 			{
 				ToggleSort(list, BuildReportTool.AssetList.SortType.AssetFilename, filter);
 			}
 
 			GUILayout.EndHorizontal();
+			#endregion
 
 			// --------------------------------------------------------------------------------------------------------
 
 			var newEntryHoveredIdx = -1;
 
 			_assetListScrollPos = GUILayout.BeginScrollView(_assetListScrollPos,
-				BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME,
-				BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+				hiddenHorizontalScrollbarStyle,
+				hiddenVerticalScrollbarStyle, BRT_BuildReportWindow.LayoutNone);
 
 			var mousePos = Event.current.mousePosition;
 
@@ -1633,15 +2223,16 @@ namespace BuildReportTool.Window.Screen
 			{
 				BuildReportTool.SizePart b = assetListToUse[n];
 
-				string styleToUse = useAlt
-					                    ? BuildReportTool.Window.Settings.LIST_SMALL_ALT_STYLE_NAME
-					                    : BuildReportTool.Window.Settings.LIST_SMALL_STYLE_NAME;
+				var styleToUse = useAlt
+					                    ? listAltEntryStyle
+					                    : listEntryStyle;
 				bool inSumSelect = list.InSumSelection(b);
 				if (inSumSelect)
 				{
-					styleToUse = BuildReportTool.Window.Settings.LIST_SMALL_SELECTED_NAME;
+					styleToUse = listSelectedEntryStyle;
 				}
 
+				#region Entry Bg
 				GUILayout.BeginHorizontal(styleToUse, BRT_BuildReportWindow.LayoutNone);
 
 
@@ -1650,7 +2241,7 @@ namespace BuildReportTool.Window.Screen
 					// only asset entries inside the top-level Assets or Packages folder can be pinged
 					if (b.Name.IsInAssetsFolder() || b.Name.IsInPackagesFolder())
 					{
-						if (GUILayout.Button("Ping", "ListButton", BRT_BuildReportWindow.LayoutPingButton))
+						if (GUILayout.Button("Ping", listButtonStyle, BRT_BuildReportWindow.LayoutPingButton))
 						{
 							if (list.GetSelectedCount() > 1 && list.InSumSelection(b) && Event.current.alt)
 							{
@@ -1680,7 +2271,7 @@ namespace BuildReportTool.Window.Screen
 				if (!hasIcon)
 				{
 					// entry has no icon, just add space so it aligns with the other entries
-					GUILayout.Label(string.Empty, "DrawTexture", BRT_BuildReportWindow.LayoutIconWidth);
+					GUILayout.Label(string.Empty, textureStyle, BRT_BuildReportWindow.LayoutIconWidth);
 
 					if (Event.current.type == EventType.Repaint)
 					{
@@ -1694,20 +2285,19 @@ namespace BuildReportTool.Window.Screen
 
 				_assetListEntry.text = GetPrettyAssetPath(b.Name, n, BuildReportTool.Options.ShowColumnAssetPath, inSumSelect);
 
-				GUIStyle styleObjToUse = GUI.skin.GetStyle(styleToUse);
-				Color temp = styleObjToUse.normal.textColor;
-				int origLeft = styleObjToUse.padding.left;
-				int origRight = styleObjToUse.padding.right;
+				Color temp = styleToUse.normal.textColor;
+				int origLeft = styleToUse.padding.left;
+				int origRight = styleToUse.padding.right;
 
-				styleObjToUse.normal.textColor = styleObjToUse.onNormal.textColor;
-				styleObjToUse.padding.right = 0;
+				styleToUse.normal.textColor = styleToUse.onNormal.textColor;
+				styleToUse.padding.right = 0;
 
-				styleObjToUse.normal.textColor = temp;
-				styleObjToUse.padding.left = 2;
+				styleToUse.normal.textColor = temp;
+				styleToUse.padding.left = 2;
 
 				// the asset icon and name
 
-				if (GUILayout.Button(_assetListEntry, styleObjToUse, BRT_BuildReportWindow.LayoutListHeight))
+				if (GUILayout.Button(_assetListEntry, styleToUse, BRT_BuildReportWindow.LayoutListHeight))
 				{
 					if (Event.current.control)
 					{
@@ -1794,7 +2384,7 @@ namespace BuildReportTool.Window.Screen
 								// this is a Resources asset
 								_selectedIsAResourcesAsset = true;
 								_selectedResourcesAssetPath = b.Name;
-								_selectedResourcesAsset.text = System.IO.Path.GetFileName(_selectedResourcesAssetPath);
+								_selectedResourcesAsset.text = _selectedResourcesAssetPath.GetFileNameOnly();
 								_selectedResourcesAsset.image = AssetDatabase.GetCachedIcon(_selectedResourcesAssetPath);
 							}
 							else
@@ -1819,8 +2409,8 @@ namespace BuildReportTool.Window.Screen
 					}
 				}
 
-				styleObjToUse.padding.right = origRight;
-				styleObjToUse.padding.left = origLeft;
+				styleToUse.padding.right = origRight;
+				styleToUse.padding.left = origLeft;
 
 
 #if BRT_ASSET_LIST_SCREEN_DEBUG
@@ -1880,7 +2470,13 @@ namespace BuildReportTool.Window.Screen
 						iconHoveredRect.y += 2;
 						iconHoveredRect.width = 17;
 						iconHoveredRect.height = 16;
-						GUI.Box(iconHoveredRect, _assetListEntry.image, "IconHovered");
+
+						var iconHoveredStyle = GUI.skin.FindStyle("IconHovered");
+						if (iconHoveredStyle == null)
+						{
+							iconHoveredStyle = GUI.skin.label;
+						}
+						GUI.Box(iconHoveredRect, _assetListEntry.image, iconHoveredStyle);
 
 						// ----------------
 						// if mouse is hovering over the correct area, we signify that
@@ -1901,6 +2497,7 @@ namespace BuildReportTool.Window.Screen
 
 
 				GUILayout.EndHorizontal();
+				#endregion
 
 				useAlt = !useAlt;
 			} // end of for-loop for drawing all asset names
@@ -1923,8 +2520,11 @@ namespace BuildReportTool.Window.Screen
 			GUILayout.EndScrollView();
 
 			GUILayout.EndVertical(); // end of column: asset path and name
+			#endregion
 
 			// --------------------------------------------------------------------------------------------------------
+
+			#region Columns: Texture Data
 
 			if (Event.current.type == EventType.Repaint)
 			{
@@ -2166,9 +2766,159 @@ namespace BuildReportTool.Window.Screen
 					_clickedTextureDataId = BuildReportTool.TextureData.DataId.None;
 				}
 			}
+			#endregion
 
 			// --------------------------------------------------------------------------------------------------------
-			// column: raw file size (Size Before Build)
+
+			#region Columns: Mesh Data
+
+			if (Event.current.type == EventType.Repaint)
+			{
+				_hoveredMeshDataId = BuildReportTool.MeshData.DataId.None;
+			}
+
+			_clickedMeshDataId = BuildReportTool.MeshData.DataId.None;
+
+			if (showMeshColumns)
+			{
+				if (BuildReportTool.Options.ShowMeshColumnMeshFilterCount)
+				{
+					DrawMeshDataColumn(viewOffset, len,
+						BuildReportTool.MeshData.DataId.MeshFilterCount, "Non-skinned",
+						true, false, list, meshData,
+						assetListToUse, ref _assetListScrollPos);
+				}
+				if (BuildReportTool.Options.ShowMeshColumnSkinnedMeshRendererCount)
+				{
+					DrawMeshDataColumn(viewOffset, len,
+						BuildReportTool.MeshData.DataId.SkinnedMeshRendererCount, "Skinned",
+						true, false, list, meshData,
+						assetListToUse, ref _assetListScrollPos);
+				}
+				if (BuildReportTool.Options.ShowMeshColumnSubMeshCount)
+				{
+					DrawMeshDataColumn(viewOffset, len,
+						BuildReportTool.MeshData.DataId.SubMeshCount, "SubMesh Count",
+						true, false, list, meshData,
+						assetListToUse, ref _assetListScrollPos);
+				}
+				if (BuildReportTool.Options.ShowMeshColumnVertexCount)
+				{
+					DrawMeshDataColumn(viewOffset, len,
+						BuildReportTool.MeshData.DataId.VertexCount, "Vertices",
+						true, false, list, meshData,
+						assetListToUse, ref _assetListScrollPos);
+				}
+				if (BuildReportTool.Options.ShowMeshColumnTriangleCount)
+				{
+					DrawMeshDataColumn(viewOffset, len,
+						BuildReportTool.MeshData.DataId.TriangleCount, "Faces",
+						true, false, list, meshData,
+						assetListToUse, ref _assetListScrollPos);
+				}
+				if (BuildReportTool.Options.ShowMeshColumnAnimationType)
+				{
+					DrawMeshDataColumn(viewOffset, len,
+						BuildReportTool.MeshData.DataId.AnimationType, "Animation Type",
+						true, false, list, meshData,
+						assetListToUse, ref _assetListScrollPos);
+				}
+				if (BuildReportTool.Options.ShowMeshColumnAnimationClipCount)
+				{
+					DrawMeshDataColumn(viewOffset, len,
+						BuildReportTool.MeshData.DataId.AnimationClipCount, "Animations",
+						true, false, list, meshData,
+						assetListToUse, ref _assetListScrollPos);
+				}
+
+				// -------------------------------
+
+				if (_clickedMeshDataId != BuildReportTool.MeshData.DataId.None)
+				{
+					ToggleSort(list, meshData, _clickedMeshDataId, filter);
+					_clickedMeshDataId = BuildReportTool.MeshData.DataId.None;
+				}
+			}
+
+			#endregion
+
+			// --------------------------------------------------------------------------------------------------------
+
+			#region Columns: Prefab Data
+
+			if (Event.current.type == EventType.Repaint)
+			{
+				_hoveredPrefabDataId = BuildReportTool.PrefabData.DataId.None;
+			}
+
+			_clickedPrefabDataId = BuildReportTool.PrefabData.DataId.None;
+
+			if (showPrefabColumns)
+			{
+				if (BuildReportTool.Options.ShowPrefabColumnContributeGI)
+				{
+					DrawPrefabDataColumn(viewOffset, len,
+						BuildReportTool.PrefabData.DataId.ContributeGI, "ContributeGI",
+						true, false, list, prefabData,
+						assetListToUse, ref _assetListScrollPos);
+				}
+				if (BuildReportTool.Options.ShowPrefabColumnBatchingStatic)
+				{
+					DrawPrefabDataColumn(viewOffset, len,
+						BuildReportTool.PrefabData.DataId.BatchingStatic, "Static Batching",
+						true, false, list, prefabData,
+						assetListToUse, ref _assetListScrollPos);
+				}
+				if (BuildReportTool.Options.ShowPrefabColumnOccluderStatic)
+				{
+					DrawPrefabDataColumn(viewOffset, len,
+						BuildReportTool.PrefabData.DataId.OccluderStatic, "Occluder Static",
+						true, false, list, prefabData,
+						assetListToUse, ref _assetListScrollPos);
+				}
+				if (BuildReportTool.Options.ShowPrefabColumnOccludeeStatic)
+				{
+					DrawPrefabDataColumn(viewOffset, len,
+						BuildReportTool.PrefabData.DataId.OccludeeStatic, "Occludee Static",
+						true, false, list, prefabData,
+						assetListToUse, ref _assetListScrollPos);
+				}
+				if (BuildReportTool.Options.ShowPrefabColumnReflectionProbeStatic)
+				{
+					DrawPrefabDataColumn(viewOffset, len,
+						BuildReportTool.PrefabData.DataId.ReflectionProbeStatic, "Reflection Probe Static",
+						true, false, list, prefabData,
+						assetListToUse, ref _assetListScrollPos);
+				}
+				if (BuildReportTool.Options.ShowPrefabColumnNavigationStatic)
+				{
+					DrawPrefabDataColumn(viewOffset, len,
+						BuildReportTool.PrefabData.DataId.NavigationStatic, "Navigation Static",
+						true, false, list, prefabData,
+						assetListToUse, ref _assetListScrollPos);
+				}
+				if (BuildReportTool.Options.ShowPrefabColumnOffMeshLinkGeneration)
+				{
+					DrawPrefabDataColumn(viewOffset, len,
+						BuildReportTool.PrefabData.DataId.OffMeshLinkGeneration, "Off-Mesh Link Generation",
+						true, false, list, prefabData,
+						assetListToUse, ref _assetListScrollPos);
+				}
+
+				// -------------------------------
+
+				if (_clickedPrefabDataId != BuildReportTool.PrefabData.DataId.None)
+				{
+					ToggleSort(list, prefabData, _clickedPrefabDataId, filter);
+					_clickedPrefabDataId = BuildReportTool.PrefabData.DataId.None;
+				}
+			}
+
+			#endregion
+
+			// --------------------------------------------------------------------------------------------------------
+
+			#region Column: Raw File Size (Size Before Build)
 
 			bool pressedRawSizeSortBtn = false;
 
@@ -2207,12 +2957,13 @@ namespace BuildReportTool.Window.Screen
 					list, assetListToUse, (b) => b.RawSize, ref _assetListScrollPos);
 			}
 
+			#endregion
 
 			bool showScrollbarForImportedSize = IsShowingUnusedAssets;
 
-
 			// --------------------------------------------------------------------------------------------------------
-			// column: imported file size
+
+			#region Column: Imported File Size
 
 			bool pressedImpSizeSortBtn = false;
 
@@ -2223,9 +2974,11 @@ namespace BuildReportTool.Window.Screen
 					list, assetListToUse, (b) => b.ImportedSize, ref _assetListScrollPos);
 			}
 
+			#endregion
 
 			// --------------------------------------------------------------------------------------------------------
-			// column: percentage to total size
+
+			#region Column: Percentage to Total Size
 
 			bool pressedPercentSortBtn = false;
 
@@ -2245,7 +2998,11 @@ namespace BuildReportTool.Window.Screen
 					}, ref _assetListScrollPos);
 			}
 
+			#endregion
+
 			// --------------------------------------------------------------------------------------------------------
+
+			#region Handle Sort Change
 
 			if (pressedRawSizeSortBtn)
 			{
@@ -2269,6 +3026,8 @@ namespace BuildReportTool.Window.Screen
 			{
 				ToggleSort(list, BuildReportTool.AssetList.SortType.PercentSize, filter);
 			}
+
+			#endregion
 
 			GUILayout.EndHorizontal();
 		}
@@ -2311,8 +3070,42 @@ namespace BuildReportTool.Window.Screen
 			ColumnDisplayDelegate dataToDisplay, ref Vector2 scrollbarPos)
 		{
 			bool buttonPressed = false;
-			GUILayout.BeginVertical(BRT_BuildReportWindow.LayoutNone);
 
+			var hiddenHorizontalScrollbarStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME);
+			if (hiddenHorizontalScrollbarStyle == null)
+			{
+				hiddenHorizontalScrollbarStyle = GUI.skin.horizontalScrollbar;
+			}
+
+			var hiddenVerticalScrollbarStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME);
+			if (hiddenVerticalScrollbarStyle == null)
+			{
+				hiddenVerticalScrollbarStyle = GUI.skin.verticalScrollbar;
+			}
+
+			var verticalScrollbarStyle = GUI.skin.verticalScrollbar;
+
+			var listEntryStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_SMALL_STYLE_NAME);
+			if (listEntryStyle == null)
+			{
+				listEntryStyle = GUI.skin.label;
+			}
+
+			var listAltEntryStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_SMALL_ALT_STYLE_NAME);
+			if (listAltEntryStyle == null)
+			{
+				listAltEntryStyle = GUI.skin.label;
+			}
+
+			var listSelectedEntryStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_SMALL_SELECTED_NAME);
+			if (listSelectedEntryStyle == null)
+			{
+				listSelectedEntryStyle = GUI.skin.label;
+			}
+
+			// ----------------------------------------------------------
+
+			GUILayout.BeginVertical(BRT_BuildReportWindow.LayoutNone);
 
 			// ----------------------------------------------------------
 			// column header
@@ -2328,8 +3121,13 @@ namespace BuildReportTool.Window.Screen
 					sortTypeStyleName = BuildReportTool.Window.Settings.LIST_COLUMN_HEADER_ASC_STYLE_NAME;
 				}
 			}
+			var sortTypeStyle = GUI.skin.FindStyle(sortTypeStyleName);
+			if (sortTypeStyle == null)
+			{
+				sortTypeStyle = GUI.skin.label;
+			}
 
-			if (GUILayout.Button(columnName, sortTypeStyleName, BRT_BuildReportWindow.LayoutListHeight) && allowSort)
+			if (GUILayout.Button(columnName, sortTypeStyle, BRT_BuildReportWindow.LayoutListHeight) && allowSort)
 			{
 				buttonPressed = true;
 			}
@@ -2340,14 +3138,14 @@ namespace BuildReportTool.Window.Screen
 			if (showScrollbar)
 			{
 				scrollbarPos = GUILayout.BeginScrollView(scrollbarPos,
-					BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME,
-					"verticalscrollbar", BRT_BuildReportWindow.LayoutNone);
+					hiddenHorizontalScrollbarStyle,
+					verticalScrollbarStyle, BRT_BuildReportWindow.LayoutNone);
 			}
 			else
 			{
 				scrollbarPos = GUILayout.BeginScrollView(scrollbarPos,
-					BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME,
-					BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+					hiddenHorizontalScrollbarStyle,
+					hiddenVerticalScrollbarStyle, BRT_BuildReportWindow.LayoutNone);
 			}
 
 
@@ -2355,17 +3153,14 @@ namespace BuildReportTool.Window.Screen
 			// actual contents
 			bool useAlt = false;
 
-			BuildReportTool.SizePart b;
 			for (int n = sta; n < end; ++n)
 			{
-				b = assetList[n];
+				var b = assetList[n];
 
-				string styleToUse = useAlt
-					                    ? BuildReportTool.Window.Settings.LIST_SMALL_ALT_STYLE_NAME
-					                    : BuildReportTool.Window.Settings.LIST_SMALL_STYLE_NAME;
+				var styleToUse = useAlt ? listAltEntryStyle : listEntryStyle;
 				if (assetListCollection.InSumSelection(b))
 				{
-					styleToUse = BuildReportTool.Window.Settings.LIST_SMALL_SELECTED_NAME;
+					styleToUse = listSelectedEntryStyle;
 				}
 
 				GUILayout.Label(dataToDisplay(b), styleToUse, BRT_BuildReportWindow.LayoutListHeightMinWidth90);
@@ -2382,13 +3177,45 @@ namespace BuildReportTool.Window.Screen
 			return buttonPressed;
 		}
 
-		bool DrawTextureDataColumn(int sta, int end, BuildReportTool.TextureData.DataId textureDataId, string columnName,
-			bool allowSort, bool showScrollbar, BuildReportTool.AssetList assetListCollection, BuildReportTool.TextureData textureData,
-			BuildReportTool.SizePart[] assetList, ref Vector2 scrollbarPos)
+		void DrawTextureDataColumn(int sta, int end, TextureData.DataId textureDataId, string columnName,
+			bool allowSort, bool showScrollbar, BuildReportTool.AssetList assetListCollection, TextureData textureData,
+			SizePart[] assetList, ref Vector2 scrollbarPos)
 		{
-			bool buttonPressed = false;
-			GUILayout.BeginVertical(BRT_BuildReportWindow.LayoutNone);
+			var hiddenHorizontalScrollbarStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME);
+			if (hiddenHorizontalScrollbarStyle == null)
+			{
+				hiddenHorizontalScrollbarStyle = GUI.skin.horizontalScrollbar;
+			}
 
+			var hiddenVerticalScrollbarStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME);
+			if (hiddenVerticalScrollbarStyle == null)
+			{
+				hiddenVerticalScrollbarStyle = GUI.skin.verticalScrollbar;
+			}
+
+			var verticalScrollbarStyle = GUI.skin.verticalScrollbar;
+
+			var listEntryStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_SMALL_STYLE_NAME);
+			if (listEntryStyle == null)
+			{
+				listEntryStyle = GUI.skin.label;
+			}
+
+			var listAltEntryStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_SMALL_ALT_STYLE_NAME);
+			if (listAltEntryStyle == null)
+			{
+				listAltEntryStyle = GUI.skin.label;
+			}
+
+			var listSelectedEntryStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_SMALL_SELECTED_NAME);
+			if (listSelectedEntryStyle == null)
+			{
+				listSelectedEntryStyle = GUI.skin.label;
+			}
+
+			// ----------------------------------------------------------
+
+			GUILayout.BeginVertical(BRT_BuildReportWindow.LayoutNone);
 
 			// ----------------------------------------------------------
 			// column header
@@ -2404,10 +3231,14 @@ namespace BuildReportTool.Window.Screen
 					sortTypeStyleName = BuildReportTool.Window.Settings.LIST_COLUMN_HEADER_ASC_STYLE_NAME;
 				}
 			}
-
-			if (GUILayout.Button(columnName, sortTypeStyleName, BRT_BuildReportWindow.LayoutListHeight) && allowSort)
+			var sortTypeStyle = GUI.skin.FindStyle(sortTypeStyleName);
+			if (sortTypeStyle == null)
 			{
-				buttonPressed = true;
+				sortTypeStyle = GUI.skin.label;
+			}
+
+			if (GUILayout.Button(columnName, sortTypeStyle, BRT_BuildReportWindow.LayoutListHeight) && allowSort)
+			{
 				_clickedTextureDataId = textureDataId;
 			}
 
@@ -2425,14 +3256,14 @@ namespace BuildReportTool.Window.Screen
 			if (showScrollbar)
 			{
 				scrollbarPos = GUILayout.BeginScrollView(scrollbarPos,
-					BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME,
-					"verticalscrollbar", BRT_BuildReportWindow.LayoutNone);
+					hiddenHorizontalScrollbarStyle,
+					verticalScrollbarStyle, BRT_BuildReportWindow.LayoutNone);
 			}
 			else
 			{
 				scrollbarPos = GUILayout.BeginScrollView(scrollbarPos,
-					BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME,
-					BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+					hiddenHorizontalScrollbarStyle,
+					hiddenVerticalScrollbarStyle, BRT_BuildReportWindow.LayoutNone);
 			}
 
 			// ----------------------------------------------------------
@@ -2440,17 +3271,14 @@ namespace BuildReportTool.Window.Screen
 			bool useAlt = false;
 
 			var textureDataEntries = textureData.GetTextureData();
-			BuildReportTool.SizePart b;
 			for (int n = sta; n < end; ++n)
 			{
-				b = assetList[n];
+				var b = assetList[n];
 
-				string styleToUse = useAlt
-					                    ? BuildReportTool.Window.Settings.LIST_SMALL_ALT_STYLE_NAME
-					                    : BuildReportTool.Window.Settings.LIST_SMALL_STYLE_NAME;
+				var styleToUse = useAlt ? listAltEntryStyle : listEntryStyle;
 				if (assetListCollection.InSumSelection(b))
 				{
-					styleToUse = BuildReportTool.Window.Settings.LIST_SMALL_SELECTED_NAME;
+					styleToUse = listSelectedEntryStyle;
 				}
 
 				var dataToDisplay = string.Empty;
@@ -2478,8 +3306,256 @@ namespace BuildReportTool.Window.Screen
 			GUILayout.EndScrollView();
 
 			GUILayout.EndVertical();
+		}
 
-			return buttonPressed;
+		void DrawMeshDataColumn(int sta, int end, MeshData.DataId meshDataId, string columnName,
+			bool allowSort, bool showScrollbar, BuildReportTool.AssetList assetListCollection, MeshData meshData,
+			SizePart[] assetList, ref Vector2 scrollbarPos)
+		{
+			var hiddenHorizontalScrollbarStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME);
+			if (hiddenHorizontalScrollbarStyle == null)
+			{
+				hiddenHorizontalScrollbarStyle = GUI.skin.horizontalScrollbar;
+			}
+
+			var hiddenVerticalScrollbarStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME);
+			if (hiddenVerticalScrollbarStyle == null)
+			{
+				hiddenVerticalScrollbarStyle = GUI.skin.verticalScrollbar;
+			}
+
+			var verticalScrollbarStyle = GUI.skin.verticalScrollbar;
+
+			var listEntryStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_SMALL_STYLE_NAME);
+			if (listEntryStyle == null)
+			{
+				listEntryStyle = GUI.skin.label;
+			}
+
+			var listAltEntryStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_SMALL_ALT_STYLE_NAME);
+			if (listAltEntryStyle == null)
+			{
+				listAltEntryStyle = GUI.skin.label;
+			}
+
+			var listSelectedEntryStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_SMALL_SELECTED_NAME);
+			if (listSelectedEntryStyle == null)
+			{
+				listSelectedEntryStyle = GUI.skin.label;
+			}
+
+			// ----------------------------------------------------------
+
+			GUILayout.BeginVertical(BRT_BuildReportWindow.LayoutNone);
+
+			// ----------------------------------------------------------
+			// column header
+			string sortTypeStyleName = BuildReportTool.Window.Settings.LIST_COLUMN_HEADER_STYLE_NAME;
+			if (allowSort && _currentSortType == BuildReportTool.AssetList.SortType.MeshData && _currentMeshDataSortType == meshDataId)
+			{
+				if (_currentSortOrder == BuildReportTool.AssetList.SortOrder.Descending)
+				{
+					sortTypeStyleName = BuildReportTool.Window.Settings.LIST_COLUMN_HEADER_DESC_STYLE_NAME;
+				}
+				else
+				{
+					sortTypeStyleName = BuildReportTool.Window.Settings.LIST_COLUMN_HEADER_ASC_STYLE_NAME;
+				}
+			}
+			var sortTypeStyle = GUI.skin.FindStyle(sortTypeStyleName);
+			if (sortTypeStyle == null)
+			{
+				sortTypeStyle = GUI.skin.label;
+			}
+
+			if (GUILayout.Button(columnName, sortTypeStyle, BRT_BuildReportWindow.LayoutListHeight) && allowSort)
+			{
+				_clickedMeshDataId = meshDataId;
+			}
+
+			if (Event.current.type == EventType.Repaint)
+			{
+				var lastRect = GUILayoutUtility.GetLastRect();
+				if (lastRect.Contains(Event.current.mousePosition))
+				{
+					_hoveredMeshDataId = meshDataId;
+				}
+			}
+
+			// ----------------------------------------------------------
+			// scrollbar
+			if (showScrollbar)
+			{
+				scrollbarPos = GUILayout.BeginScrollView(scrollbarPos,
+					hiddenHorizontalScrollbarStyle,
+					verticalScrollbarStyle, BRT_BuildReportWindow.LayoutNone);
+			}
+			else
+			{
+				scrollbarPos = GUILayout.BeginScrollView(scrollbarPos,
+					hiddenHorizontalScrollbarStyle,
+					hiddenVerticalScrollbarStyle, BRT_BuildReportWindow.LayoutNone);
+			}
+
+			// ----------------------------------------------------------
+			// actual contents
+			bool useAlt = false;
+
+			var meshDataEntries = meshData.GetMeshData();
+			for (int n = sta; n < end; ++n)
+			{
+				var b = assetList[n];
+
+				var styleToUse = useAlt
+					                    ? listAltEntryStyle
+					                    : listEntryStyle;
+				if (assetListCollection.InSumSelection(b))
+				{
+					styleToUse = listSelectedEntryStyle;
+				}
+
+				var dataToDisplay = string.Empty;
+				var assetHasMeshData = meshDataEntries.ContainsKey(b.Name);
+				if (assetHasMeshData)
+				{
+					dataToDisplay = meshDataEntries[b.Name].ToDisplayedValue(meshDataId);
+				}
+
+				GUILayout.Label(dataToDisplay, styleToUse, BRT_BuildReportWindow.LayoutListHeightMinWidth90);
+
+				useAlt = !useAlt;
+			}
+
+			GUILayout.Space(SCROLLBAR_BOTTOM_PADDING);
+
+			GUILayout.EndScrollView();
+
+			GUILayout.EndVertical();
+		}
+
+		void DrawPrefabDataColumn(int sta, int end, PrefabData.DataId prefabDataId, string columnName,
+			bool allowSort, bool showScrollbar, BuildReportTool.AssetList assetListCollection, PrefabData prefabData,
+			SizePart[] assetList, ref Vector2 scrollbarPos)
+		{
+			var hiddenHorizontalScrollbarStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME);
+			if (hiddenHorizontalScrollbarStyle == null)
+			{
+				hiddenHorizontalScrollbarStyle = GUI.skin.horizontalScrollbar;
+			}
+
+			var hiddenVerticalScrollbarStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.HIDDEN_SCROLLBAR_STYLE_NAME);
+			if (hiddenVerticalScrollbarStyle == null)
+			{
+				hiddenVerticalScrollbarStyle = GUI.skin.verticalScrollbar;
+			}
+
+			var verticalScrollbarStyle = GUI.skin.verticalScrollbar;
+
+			var listEntryStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_SMALL_STYLE_NAME);
+			if (listEntryStyle == null)
+			{
+				listEntryStyle = GUI.skin.label;
+			}
+
+			var listAltEntryStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_SMALL_ALT_STYLE_NAME);
+			if (listAltEntryStyle == null)
+			{
+				listAltEntryStyle = GUI.skin.label;
+			}
+
+			var listSelectedEntryStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_SMALL_SELECTED_NAME);
+			if (listSelectedEntryStyle == null)
+			{
+				listSelectedEntryStyle = GUI.skin.label;
+			}
+
+			// ----------------------------------------------------------
+
+			GUILayout.BeginVertical(BRT_BuildReportWindow.LayoutNone);
+
+			// ----------------------------------------------------------
+			// column header
+			string sortTypeStyleName = BuildReportTool.Window.Settings.LIST_COLUMN_HEADER_STYLE_NAME;
+			if (allowSort && _currentSortType == BuildReportTool.AssetList.SortType.PrefabData && _currentPrefabDataSortType == prefabDataId)
+			{
+				if (_currentSortOrder == BuildReportTool.AssetList.SortOrder.Descending)
+				{
+					sortTypeStyleName = BuildReportTool.Window.Settings.LIST_COLUMN_HEADER_DESC_STYLE_NAME;
+				}
+				else
+				{
+					sortTypeStyleName = BuildReportTool.Window.Settings.LIST_COLUMN_HEADER_ASC_STYLE_NAME;
+				}
+			}
+			var sortTypeStyle = GUI.skin.FindStyle(sortTypeStyleName);
+			if (sortTypeStyle == null)
+			{
+				sortTypeStyle = GUI.skin.label;
+			}
+
+			if (GUILayout.Button(columnName, sortTypeStyle, BRT_BuildReportWindow.LayoutListHeight) && allowSort)
+			{
+				_clickedPrefabDataId = prefabDataId;
+			}
+
+			if (Event.current.type == EventType.Repaint)
+			{
+				var lastRect = GUILayoutUtility.GetLastRect();
+				if (lastRect.Contains(Event.current.mousePosition))
+				{
+					_hoveredPrefabDataId = prefabDataId;
+				}
+			}
+
+			// ----------------------------------------------------------
+			// scrollbar
+			if (showScrollbar)
+			{
+				scrollbarPos = GUILayout.BeginScrollView(scrollbarPos,
+					hiddenHorizontalScrollbarStyle,
+					verticalScrollbarStyle, BRT_BuildReportWindow.LayoutNone);
+			}
+			else
+			{
+				scrollbarPos = GUILayout.BeginScrollView(scrollbarPos,
+					hiddenHorizontalScrollbarStyle,
+					hiddenVerticalScrollbarStyle, BRT_BuildReportWindow.LayoutNone);
+			}
+
+			// ----------------------------------------------------------
+			// actual contents
+			bool useAlt = false;
+
+			var prefabDataEntries = prefabData.GetPrefabData();
+			for (int n = sta; n < end; ++n)
+			{
+				var b = assetList[n];
+
+				var styleToUse = useAlt
+					                    ? listAltEntryStyle
+					                    : listEntryStyle;
+				if (assetListCollection.InSumSelection(b))
+				{
+					styleToUse = listSelectedEntryStyle;
+				}
+
+				var dataToDisplay = string.Empty;
+				var assetHasMeshData = prefabDataEntries.ContainsKey(b.Name);
+				if (assetHasMeshData)
+				{
+					dataToDisplay = prefabDataEntries[b.Name].HasValue(prefabDataId);
+				}
+
+				GUILayout.Label(dataToDisplay, styleToUse, BRT_BuildReportWindow.LayoutListHeightMinWidth90);
+
+				useAlt = !useAlt;
+			}
+
+			GUILayout.Space(SCROLLBAR_BOTTOM_PADDING);
+
+			GUILayout.EndScrollView();
+
+			GUILayout.EndVertical();
 		}
 	}
 }

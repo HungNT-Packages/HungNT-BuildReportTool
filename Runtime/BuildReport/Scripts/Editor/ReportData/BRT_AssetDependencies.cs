@@ -14,16 +14,19 @@ namespace BuildReportTool
 	{
 		/// <summary>
 		/// Name of project folder.
+		/// Included as part of the filename when saved.
 		/// </summary>
 		public string ProjectName;
 
 		/// <summary>
 		/// Type of build that the project was configured to, at the time that asset dependencies were calculated.
+		/// Included as part of the filename when saved.
 		/// </summary>
 		public string BuildType;
 
 		/// <summary>
 		/// When asset dependencies were calculated.
+		/// Included as part of the filename when saved.
 		/// </summary>
 		public System.DateTime TimeGot;
 
@@ -234,10 +237,14 @@ namespace BuildReportTool
 
 			for (int n = 0, len = usersFlattened.Count; n < len; ++n)
 			{
+				bool isAssembly = usersFlattened[n].AssetPath.IsAnAssembly();
 				if (usersFlattened[n].AssetPath.IsSceneFile() ||
-				    usersFlattened[n].AssetPath.IsInResourcesFolder())
+				    usersFlattened[n].AssetPath.IsInResourcesFolder() ||
+				    usersFlattened[n].AssetPath.IsSpriteAtlasFile() ||
+				    isAssembly)
 				{
-					var assetFilename = System.IO.Path.GetFileName(usersFlattened[n].AssetPath);
+					string assetFilename =
+						isAssembly ? usersFlattened[n].AssetPath : usersFlattened[n].AssetPath.GetFileNameOnly();
 
 					var alreadyInList = false;
 					for (int alreadyN = 0, alreadyLen = availableExistingIdx; alreadyN < alreadyLen; ++alreadyN)
@@ -254,17 +261,21 @@ namespace BuildReportTool
 						continue;
 					}
 
+					Texture icon = isAssembly
+						? BuildReportTool.Window.Utility.AssemblyIcon
+						: AssetDatabase.GetCachedIcon(usersFlattened[n].AssetPath);
+
 					if (destination.Count <= availableExistingIdx)
 					{
 						destination.Add(new GUIContent(
 							assetFilename,
-							AssetDatabase.GetCachedIcon(usersFlattened[n].AssetPath),
+							icon,
 							usersFlattened[n].AssetPath));
 					}
 					else
 					{
 						destination[availableExistingIdx].text = assetFilename;
-						destination[availableExistingIdx].image = AssetDatabase.GetCachedIcon(usersFlattened[n].AssetPath);
+						destination[availableExistingIdx].image = icon;
 						destination[availableExistingIdx].tooltip = usersFlattened[n].AssetPath;
 					}
 
@@ -284,12 +295,12 @@ namespace BuildReportTool
 	public class DependencyEntry
 	{
 		/// <summary>
-		/// Assets that this one uses.
+		/// Assets that this one directly uses.
 		/// </summary>
 		public List<string> Uses = new List<string>();
 
 		/// <summary>
-		/// Assets that use this one.
+		/// Assets that directly use this one.
 		/// </summary>
 		public List<string> Users = new List<string>();
 

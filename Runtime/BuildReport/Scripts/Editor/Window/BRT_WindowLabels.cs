@@ -37,6 +37,7 @@ namespace BuildReportTool.Window
 
 
 		public const string UNUSED_TOTAL_SIZE_DESC = "Total size of project assets not included in the build.";
+		public const string UNUSED_TOTAL_IS_FROM_BATCH = "This size only accounts for the first {0:N0} assets in the project due to the <b><color=white>Unused Assets batching</color></b>. You can turn this off from the Options (under the <b><color=white>In Unused Assets List</color></b> section) then regenerate the Build Report.";
 
 		public const string USED_TOTAL_SIZE_DESC =
 			"Total size of the used assets before being packed.\nAlso includes size of compiled Mono scripts.\nDoes not include size of files in StreamingAssets.";
@@ -89,6 +90,7 @@ namespace BuildReportTool.Window
 		public const string SIZE_STATS_CATEGORY_LABEL = "Total Size";
 		public const string USED_ASSETS_CATEGORY_LABEL = "Used Assets";
 		public const string UNUSED_ASSETS_CATEGORY_LABEL = "Unused Assets";
+		public const string EXTRA_DATA_CATEGORY_LABEL = "Extra Data";
 		public const string OPTIONS_CATEGORY_LABEL = "Options";
 		public const string HELP_CATEGORY_LABEL = "Help & Info";
 

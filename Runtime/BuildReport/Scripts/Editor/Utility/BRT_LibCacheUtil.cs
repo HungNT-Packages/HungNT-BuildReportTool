@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEditor;
 using System.IO;
 
-
 public static class BRT_LibCacheUtil
 {
 	// assetPath is expected to start with "Assets/"

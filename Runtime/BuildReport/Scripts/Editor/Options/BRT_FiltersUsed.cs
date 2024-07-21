@@ -36,7 +36,8 @@ namespace BuildReportTool
 						".exr",
 						".iff",
 						".pict",
-						"Built-in Texture2D:" // Unity-generated sprite atlases
+						"Built-in Texture2D:", // Unity-generated sprite atlases
+                        ".spriteatlasv2", // Sprite Atlas V2
 					}),
 				new FileFilters("Models",
 					new[]

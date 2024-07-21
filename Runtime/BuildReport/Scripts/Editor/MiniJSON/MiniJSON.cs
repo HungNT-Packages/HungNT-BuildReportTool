@@ -578,7 +578,9 @@ namespace MiniJSON {
                     }
                     builder.Append(numberToString);
                 } else {
+#if UNITY_5_3_OR_NEWER
                     builder.Append(UnityEngine.JsonUtility.ToJson(value));
+#endif
                 }
             }
         }

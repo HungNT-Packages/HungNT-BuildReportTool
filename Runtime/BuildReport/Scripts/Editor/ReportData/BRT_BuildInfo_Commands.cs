@@ -4,6 +4,7 @@
 
 using UnityEditor;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace BuildReportTool
 {
@@ -513,26 +514,38 @@ namespace BuildReportTool
 		}
 
 
-		int _unusedAssetsBatchNum;
+		int _unusedAssetsBatchIdx;
 
-		public int UnusedAssetsBatchNum
+		public int UnusedAssetsBatchIdx
 		{
-			get { return _unusedAssetsBatchNum; }
+			get { return _unusedAssetsBatchIdx; }
+		}
+
+		/// <summary>
+		/// Last asset number that each batch displays.
+		/// </summary>
+		[System.Xml.Serialization.XmlIgnore]
+		public List<int> UnusedAssetsBatchFinalNum = new List<int>();
+
+		public void ResetUnusedAssetsBatchData()
+		{
+			_unusedAssetsBatchIdx = 0;
+			UnusedAssetsBatchFinalNum.Clear();
 		}
 
 		public void MoveUnusedAssetsBatchNumToNext()
 		{
-			++_unusedAssetsBatchNum;
+			++_unusedAssetsBatchIdx;
 		}
 
 		public void MoveUnusedAssetsBatchNumToPrev()
 		{
-			if (_unusedAssetsBatchNum == 0)
+			if (_unusedAssetsBatchIdx == 0)
 			{
 				return;
 			}
 
-			--_unusedAssetsBatchNum;
+			--_unusedAssetsBatchIdx;
 		}
 
 		// ---------------------------------------

@@ -215,7 +215,7 @@ namespace BuildReportTool
 
 		static int SortByAssetNameDescending(BuildReportTool.SizePart entry1, BuildReportTool.SizePart entry2)
 		{
-			int result = string.Compare(System.IO.Path.GetFileName(entry1.Name), System.IO.Path.GetFileName(entry2.Name),
+			int result = string.Compare(entry1.Name.GetFileNameOnly(), entry2.Name.GetFileNameOnly(),
 				StringComparison.OrdinalIgnoreCase);
 
 			return result;
@@ -223,7 +223,7 @@ namespace BuildReportTool
 
 		static int SortByAssetNameAscending(BuildReportTool.SizePart entry1, BuildReportTool.SizePart entry2)
 		{
-			int result = string.Compare(System.IO.Path.GetFileName(entry1.Name), System.IO.Path.GetFileName(entry2.Name),
+			int result = string.Compare(entry1.Name.GetFileNameOnly(), entry2.Name.GetFileNameOnly(),
 				StringComparison.OrdinalIgnoreCase);
 
 			// invert the result

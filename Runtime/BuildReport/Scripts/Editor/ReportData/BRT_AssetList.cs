@@ -112,6 +112,8 @@ namespace BuildReportTool
 			PercentSize,
 
 			TextureData,
+			MeshData,
+			PrefabData,
 		}
 
 		public enum SortOrder
@@ -123,6 +125,8 @@ namespace BuildReportTool
 
 		SortType _lastSortType = SortType.None;
 		BuildReportTool.TextureData.DataId _lastTextureSortType = BuildReportTool.TextureData.DataId.None;
+		BuildReportTool.MeshData.DataId _lastMeshSortType = BuildReportTool.MeshData.DataId.None;
+		BuildReportTool.PrefabData.DataId _lastPrefabSortType = BuildReportTool.PrefabData.DataId.None;
 		SortOrder _lastSortOrder = SortOrder.None;
 
 		public SortType LastSortType
@@ -140,7 +144,8 @@ namespace BuildReportTool
 		public void Resort(BuildReportTool.SizePart[] assetList)
 		{
 			if (_lastSortType != SortType.None &&
-			    _lastTextureSortType != BuildReportTool.TextureData.DataId.None &&
+			    _lastTextureSortType == BuildReportTool.TextureData.DataId.None &&
+			    _lastMeshSortType == BuildReportTool.MeshData.DataId.None &&
 			    _lastSortOrder != SortOrder.None)
 			{
 				AssetListUtility.SortAssetList(assetList, _lastSortType, _lastSortOrder);
@@ -150,6 +155,7 @@ namespace BuildReportTool
 		public void Sort(BuildReportTool.TextureData textureData, BuildReportTool.TextureData.DataId sortType, SortOrder sortOrder, BuildReportTool.FileFilterGroup fileFilters)
 		{
 			_lastTextureSortType = sortType;
+			_lastMeshSortType = BuildReportTool.MeshData.DataId.None;
 			_lastSortType = SortType.TextureData;
 			_lastSortOrder = sortOrder;
 
@@ -168,9 +174,54 @@ namespace BuildReportTool
 			}
 		}
 
+		public void Sort(BuildReportTool.MeshData meshData, BuildReportTool.MeshData.DataId sortType, SortOrder sortOrder, BuildReportTool.FileFilterGroup fileFilters)
+		{
+			_lastTextureSortType = BuildReportTool.TextureData.DataId.None;
+			_lastMeshSortType = sortType;
+			_lastSortType = SortType.MeshData;
+			_lastSortOrder = sortOrder;
+
+			_hasListBeenSorted.Clear();
+
+			_hasListBeenSorted.Add(fileFilters.SelectedFilterIdx);
+
+			// sort only currently displayed list
+			if (fileFilters.SelectedFilterIdx == -1)
+			{
+				AssetListUtility.SortAssetList(_all, meshData, sortType, sortOrder);
+			}
+			else
+			{
+				AssetListUtility.SortAssetList(_perCategory[fileFilters.SelectedFilterIdx], meshData, sortType, sortOrder);
+			}
+		}
+
+		public void Sort(BuildReportTool.PrefabData prefabData, BuildReportTool.PrefabData.DataId sortType, SortOrder sortOrder, BuildReportTool.FileFilterGroup fileFilters)
+		{
+			_lastTextureSortType = BuildReportTool.TextureData.DataId.None;
+			_lastPrefabSortType = sortType;
+			_lastSortType = SortType.PrefabData;
+			_lastSortOrder = sortOrder;
+
+			_hasListBeenSorted.Clear();
+
+			_hasListBeenSorted.Add(fileFilters.SelectedFilterIdx);
+
+			// sort only currently displayed list
+			if (fileFilters.SelectedFilterIdx == -1)
+			{
+				AssetListUtility.SortAssetList(_all, prefabData, sortType, sortOrder);
+			}
+			else
+			{
+				AssetListUtility.SortAssetList(_perCategory[fileFilters.SelectedFilterIdx], prefabData, sortType, sortOrder);
+			}
+		}
+
 		public void Sort(SortType sortType, SortOrder sortOrder, BuildReportTool.FileFilterGroup fileFilters)
 		{
 			_lastTextureSortType = BuildReportTool.TextureData.DataId.None;
+			_lastMeshSortType = BuildReportTool.MeshData.DataId.None;
 			_lastSortType = sortType;
 			_lastSortOrder = sortOrder;
 
@@ -197,14 +248,17 @@ namespace BuildReportTool
 
 		public void SortIfNeeded(BuildReportTool.FileFilterGroup fileFilters)
 		{
-			if ((_lastSortType != SortType.None ||
-			    _lastTextureSortType != BuildReportTool.TextureData.DataId.None) &&
+			if (_lastSortType != SortType.None &&
 			    _lastSortOrder != SortOrder.None &&
 			    !_hasListBeenSorted.Contains(fileFilters.SelectedFilterIdx))
 			{
 				if (fileFilters.SelectedFilterIdx == -1)
 				{
-					if (_lastTextureSortType != TextureData.DataId.None)
+					if (_lastSortType == SortType.TextureData)
+					{
+
+					}
+					else if (_lastSortType == SortType.MeshData)
 					{
 
 					}
@@ -215,7 +269,11 @@ namespace BuildReportTool
 				}
 				else
 				{
-					if (_lastTextureSortType != TextureData.DataId.None)
+					if (_lastSortType == SortType.TextureData)
+					{
+
+					}
+					else if (_lastSortType == SortType.MeshData)
 					{
 
 					}

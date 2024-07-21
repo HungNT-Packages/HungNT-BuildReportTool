@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
 using UnityEditor;
@@ -24,21 +23,71 @@ namespace BuildReportTool.Window.Screen
 			get { return Labels.OVERVIEW_CATEGORY_LABEL; }
 		}
 
-		public override void RefreshData(BuildInfo buildReport, AssetDependencies assetDependencies, TextureData textureData, UnityBuildReport unityBuildReport)
+		public override void RefreshData(BuildInfo buildReport, AssetDependencies assetDependencies,
+			TextureData textureData, MeshData meshData, PrefabData prefabData, UnityBuildReport unityBuildReport)
 		{
 		}
 
 		public override void DrawGUI(Rect position,
-			BuildInfo buildReportToDisplay, AssetDependencies assetDependencies, TextureData textureData,
-			UnityBuildReport unityBuildReport,
-			out bool requestRepaint
-		)
+			BuildInfo buildReportToDisplay, AssetDependencies assetDependencies,
+			TextureData textureData, MeshData meshData, PrefabData prefabData,
+			UnityBuildReport unityBuildReport, BuildReportTool.ExtraData extraData,
+			out bool requestRepaint)
 		{
 			if (buildReportToDisplay == null)
 			{
 				requestRepaint = false;
 				return;
 			}
+
+			var titleStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.MAIN_TITLE_STYLE_NAME);
+			if (titleStyle == null)
+			{
+				titleStyle = GUI.skin.label;
+			}
+
+			var bigLabelStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME);
+			if (bigLabelStyle == null)
+			{
+				bigLabelStyle = GUI.skin.label;
+			}
+
+			var bigValueStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.INFO_SUBTITLE_STYLE_NAME);
+			if (bigValueStyle == null)
+			{
+				bigValueStyle = GUI.skin.label;
+			}
+
+			var bigNumberStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.BIG_NUMBER_STYLE_NAME);
+			if (bigNumberStyle == null)
+			{
+				bigNumberStyle = GUI.skin.label;
+			}
+
+			var smallLabelStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.SETTING_NAME_STYLE_NAME);
+			if (smallLabelStyle == null)
+			{
+				smallLabelStyle = GUI.skin.label;
+			}
+
+			var smallValueStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.SETTING_VALUE_STYLE_NAME);
+			if (smallValueStyle == null)
+			{
+				smallValueStyle = GUI.skin.label;
+			}
+
+			var helpDescriptionStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.TINY_HELP_STYLE_NAME);
+			if (helpDescriptionStyle == null)
+			{
+				helpDescriptionStyle = GUI.skin.label;
+			}
+
+			var infoDescriptionStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.INFO_TEXT_STYLE_NAME);
+			if (infoDescriptionStyle == null)
+			{
+				infoDescriptionStyle = GUI.skin.label;
+			}
+
 
 			GUILayout.Space(2); // top padding for scrollbar
 
@@ -54,7 +103,7 @@ namespace BuildReportTool.Window.Screen
 
 
 			// report title
-			GUILayout.Label(buildReportToDisplay.SuitableTitle, BuildReportTool.Window.Settings.MAIN_TITLE_STYLE_NAME);
+			GUILayout.Label(buildReportToDisplay.SuitableTitle, titleStyle);
 
 
 			GUILayout.Space(10);
@@ -66,32 +115,29 @@ namespace BuildReportTool.Window.Screen
 			GUILayout.BeginHorizontal();
 			// 1st column
 			GUILayout.BeginVertical(GUILayout.MaxWidth(350));
-			GUILayout.Label(Labels.TIME_OF_BUILD_LABEL, BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME);
-			GUILayout.Label(buildReportToDisplay.GetTimeReadable(),
-				BuildReportTool.Window.Settings.INFO_SUBTITLE_STYLE_NAME);
+			GUILayout.Label(Labels.TIME_OF_BUILD_LABEL, bigLabelStyle);
+			GUILayout.Label(buildReportToDisplay.GetTimeReadable(), bigValueStyle);
 
-			GUILayout.Label("Project building took:", BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME);
-			GUILayout.Label("How long the project building took. This is the time between OnPreprocessBuild and OnPostprocessBuild.",
-				BuildReportTool.Window.Settings.TINY_HELP_STYLE_NAME);
-			GUILayout.Label(buildReportToDisplay.BuildDurationTime.ToString(),
-				BuildReportTool.Window.Settings.INFO_SUBTITLE_STYLE_NAME);
+			GUILayout.Space(10);
+			GUILayout.Label("Project building took:", bigLabelStyle);
+			GUILayout.Label("How long the project building took. This is the time between <b>OnPreprocessBuild</b> and <b>OnPostprocessBuild</b>.", helpDescriptionStyle);
+			GUILayout.Label(buildReportToDisplay.BuildDurationTime.ToString(), bigValueStyle);
 
-			GUILayout.Label("Report generation took:", BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME);
-			GUILayout.Label("How long the Build Report Generation took.",
-				BuildReportTool.Window.Settings.TINY_HELP_STYLE_NAME);
-			GUILayout.Label(buildReportToDisplay.ReportGenerationTime.ToString(),
-				BuildReportTool.Window.Settings.INFO_SUBTITLE_STYLE_NAME);
+			GUILayout.Space(10);
+			GUILayout.Label("Report generation took:", bigLabelStyle);
+			GUILayout.Label("How long the Build Report Generation took.", helpDescriptionStyle);
+			GUILayout.Label(buildReportToDisplay.ReportGenerationTime.ToString(), bigValueStyle);
 
 			if (!string.IsNullOrEmpty(buildReportToDisplay.TotalBuildSize) &&
 			    !string.IsNullOrEmpty(buildReportToDisplay.BuildFilePath))
 			{
+				GUILayout.Space(10);
 				GUILayout.BeginVertical();
-				GUILayout.Label(Labels.BUILD_TOTAL_SIZE_LABEL, BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME);
+				GUILayout.Label(Labels.BUILD_TOTAL_SIZE_LABEL, bigLabelStyle);
 
-				GUILayout.Label(BuildReportTool.Util.GetBuildSizePathDescription(buildReportToDisplay),
-					BuildReportTool.Window.Settings.TINY_HELP_STYLE_NAME);
+				GUILayout.Label(BuildReportTool.Util.GetBuildSizePathDescription(buildReportToDisplay), helpDescriptionStyle);
 
-				GUILayout.Label(buildReportToDisplay.TotalBuildSize, BuildReportTool.Window.Settings.BIG_NUMBER_STYLE_NAME);
+				GUILayout.Label(buildReportToDisplay.TotalBuildSize, bigNumberStyle);
 				GUILayout.EndVertical();
 			}
 
@@ -111,18 +157,20 @@ namespace BuildReportTool.Window.Screen
 					 ? "\n<size=12>(not counting streaming assets)</size>"
 					 : ""));
 
-			GUILayout.Label(largestAssetCategoryLabel, BuildReportTool.Window.Settings.INFO_TEXT_STYLE_NAME);
+			GUILayout.Label(largestAssetCategoryLabel, infoDescriptionStyle);
 			GUILayout.Space(20);
 			GUILayout.EndVertical();
 
+			GUILayout.Space(20);
+
 			// 2nd column
 			GUILayout.BeginVertical(GUILayout.MaxWidth(250));
-			GUILayout.Label("Made for:", BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME);
-			GUILayout.Label(buildReportToDisplay.BuildType, BuildReportTool.Window.Settings.INFO_SUBTITLE_STYLE_NAME);
+			GUILayout.Label("Made for:", bigLabelStyle);
+			GUILayout.Label(buildReportToDisplay.BuildType, bigValueStyle);
 
-			GUILayout.Label("Built in:", BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME);
-			GUILayout.Label(buildReportToDisplay.UnityVersionDisplayed,
-				BuildReportTool.Window.Settings.INFO_SUBTITLE_STYLE_NAME);
+			GUILayout.Space(10);
+			GUILayout.Label("Built in:", bigLabelStyle);
+			GUILayout.Label(buildReportToDisplay.UnityVersionDisplayed, bigValueStyle);
 			GUILayout.EndVertical();
 
 			DrawScenesInBuild(buildReportToDisplay.ScenesInBuild);
@@ -148,8 +196,9 @@ namespace BuildReportTool.Window.Screen
 			if (_showTopUsed)
 			{
 				GUILayout.Label(string.Format("Top {0} largest in build:", numberOfTopUsed.ToString()),
-					BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME);
+					bigLabelStyle);
 
+				GUILayout.Space(4);
 				if (!BuildReportTool.Options.AutoResortAssetsWhenUnityEditorRegainsFocus &&
 				    GUILayout.Button("Refresh", GUILayout.Height(20), GUILayout.MaxWidth(520)))
 				{
@@ -169,8 +218,9 @@ namespace BuildReportTool.Window.Screen
 			if (_showTopUnused)
 			{
 				GUILayout.Label(string.Format("Top {0} largest not in build:", numberOfTopUnused.ToString()),
-					BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME);
+					bigLabelStyle);
 
+				GUILayout.Space(4);
 				if (!BuildReportTool.Options.AutoResortAssetsWhenUnityEditorRegainsFocus &&
 				    GUILayout.Button("Refresh", GUILayout.Height(20), GUILayout.MaxWidth(520)))
 				{
@@ -191,30 +241,32 @@ namespace BuildReportTool.Window.Screen
 
 			if (assetDependencies != null && !string.IsNullOrEmpty(assetDependencies.SavedPath))
 			{
-				GUILayout.Label("Asset Dependencies file used:",
-					BuildReportTool.Window.Settings.SETTING_NAME_STYLE_NAME);
-				GUILayout.Label(assetDependencies.SavedPath,
-					BuildReportTool.Window.Settings.SETTING_VALUE_STYLE_NAME);
+				GUILayout.Label("Asset Dependencies file used:", smallLabelStyle);
+				GUILayout.Label(assetDependencies.SavedPath, smallValueStyle);
 
 				GUILayout.Space(10);
 			}
 
 			if (textureData != null && !string.IsNullOrEmpty(textureData.SavedPath))
 			{
-				GUILayout.Label("Texture Data file used:",
-					BuildReportTool.Window.Settings.SETTING_NAME_STYLE_NAME);
-				GUILayout.Label(textureData.SavedPath,
-					BuildReportTool.Window.Settings.SETTING_VALUE_STYLE_NAME);
+				GUILayout.Label("Texture Data file used:", smallLabelStyle);
+				GUILayout.Label(textureData.SavedPath, smallValueStyle);
 
 				GUILayout.Space(10);
 			}
 
 			if (unityBuildReport != null && !string.IsNullOrEmpty(unityBuildReport.SavedPath))
 			{
-				GUILayout.Label("Additional Unity Build Report file used:",
-					BuildReportTool.Window.Settings.SETTING_NAME_STYLE_NAME);
-				GUILayout.Label(unityBuildReport.SavedPath,
-					BuildReportTool.Window.Settings.SETTING_VALUE_STYLE_NAME);
+				GUILayout.Label("Additional Unity Build Report file used:", smallLabelStyle);
+				GUILayout.Label(unityBuildReport.SavedPath, smallValueStyle);
+
+				GUILayout.Space(10);
+			}
+
+			if (!string.IsNullOrEmpty(extraData.Contents))
+			{
+				GUILayout.Label("Extra Data file used:", smallLabelStyle);
+				GUILayout.Label(extraData.SavedPath, smallValueStyle);
 
 				GUILayout.Space(10);
 			}
@@ -325,6 +377,36 @@ namespace BuildReportTool.Window.Screen
 				return;
 			}
 
+			var listNormalStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_NORMAL_STYLE_NAME);
+			if (listNormalStyle == null)
+			{
+				listNormalStyle = GUI.skin.label;
+			}
+
+			var listAltStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_NORMAL_ALT_STYLE_NAME);
+			if (listAltStyle == null)
+			{
+				listAltStyle = GUI.skin.label;
+			}
+
+			var listIconNormalStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_ICON_STYLE_NAME);
+			if (listIconNormalStyle == null)
+			{
+				listIconNormalStyle = GUI.skin.label;
+			}
+
+			var listIconAltStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_ICON_ALT_STYLE_NAME);
+			if (listIconAltStyle == null)
+			{
+				listIconAltStyle = GUI.skin.label;
+			}
+
+			var iconHoveredStyle = GUI.skin.FindStyle("IconHovered");
+			if (iconHoveredStyle == null)
+			{
+				iconHoveredStyle = GUI.skin.label;
+			}
+
 			bool useAlt = true;
 
 			var newEntryHoveredIdx = -1;
@@ -342,12 +424,17 @@ namespace BuildReportTool.Window.Screen
 			{
 				BuildReportTool.SizePart b = assetsToShow[n];
 
-				string styleToUse = useAlt
-					                    ? BuildReportTool.Window.Settings.LIST_NORMAL_ALT_STYLE_NAME
-					                    : BuildReportTool.Window.Settings.LIST_NORMAL_STYLE_NAME;
-				string iconStyleToUse = useAlt
-					                        ? BuildReportTool.Window.Settings.LIST_ICON_ALT_STYLE_NAME
-					                        : BuildReportTool.Window.Settings.LIST_ICON_STYLE_NAME;
+				var styleToUse = useAlt ? listAltStyle : listNormalStyle;
+				var iconStyleToUse = useAlt ? listIconAltStyle : listIconNormalStyle;
+
+				if (styleToUse == null)
+				{
+					styleToUse = GUI.skin.label;
+				}
+				if (iconStyleToUse == null)
+				{
+					iconStyleToUse = GUI.skin.label;
+				}
 
 				Texture icon = AssetDatabase.GetCachedIcon(b.Name);
 
@@ -355,11 +442,11 @@ namespace BuildReportTool.Window.Screen
 				if (icon == null)
 				{
 					// no icon, just add space so it aligns with the other entries
-					GUILayout.Label(string.Empty, iconStyleToUse, GUILayout.Width(28), GUILayout.Height(30));
+					GUILayout.Label(string.Empty, iconStyleToUse, BRT_BuildReportWindow.Layout28x30);
 				}
 				else
 				{
-					GUILayout.Button(icon, iconStyleToUse, GUILayout.Width(28), GUILayout.Height(30));
+					GUILayout.Button(icon, iconStyleToUse, BRT_BuildReportWindow.Layout28x30);
 				}
 
 				if (Event.current.type == EventType.Repaint)
@@ -375,13 +462,12 @@ namespace BuildReportTool.Window.Screen
 						newEntryHovered = b;
 						newEntryHoveredRect = iconRect;
 
-						GUI.Box(iconRect, icon, "IconHovered");
+						GUI.Box(iconRect, icon, iconHoveredStyle);
 					}
 				}
 
 				string prettyName = string.Format(" {0}. {1}", (n + 1).ToString(), BuildReportTool.Util.GetAssetFilename(b.Name));
-				if (GUILayout.Button(prettyName, styleToUse, GUILayout.MinWidth(100), GUILayout.MaxWidth(400),
-					GUILayout.Height(30)))
+				if (GUILayout.Button(prettyName, styleToUse, BRT_BuildReportWindow.Layout100To400x30))
 				{
 					Utility.PingAssetInProject(b.Name);
 				}
@@ -399,7 +485,7 @@ namespace BuildReportTool.Window.Screen
 						newEntryHovered = b;
 						newEntryHoveredRect = labelRect;
 
-						GUI.Box(iconRect, icon, "IconHovered");
+						GUI.Box(iconRect, icon, iconHoveredStyle);
 					}
 				}
 
@@ -458,12 +544,9 @@ namespace BuildReportTool.Window.Screen
 			{
 				BuildReportTool.SizePart b = assetsToShow[n];
 
-				string styleToUse = useAlt
-					                    ? BuildReportTool.Window.Settings.LIST_NORMAL_ALT_STYLE_NAME
-					                    : BuildReportTool.Window.Settings.LIST_NORMAL_STYLE_NAME;
+				var styleToUse = useAlt ? listAltStyle : listNormalStyle;
 
-				GUILayout.Label(useRawSize ? b.RawSize : b.ImportedSize, styleToUse, GUILayout.MaxWidth(100),
-					GUILayout.Height(30));
+				GUILayout.Label(useRawSize ? b.RawSize : b.ImportedSize, styleToUse, BRT_BuildReportWindow.LayoutTo100x30);
 
 				useAlt = !useAlt;
 			}
@@ -481,16 +564,47 @@ namespace BuildReportTool.Window.Screen
 				return;
 			}
 
+
+			var bigLabelStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME);
+			if (bigLabelStyle == null)
+			{
+				bigLabelStyle = GUI.skin.label;
+			}
+
+			var listNormalStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_NORMAL_STYLE_NAME);
+			if (listNormalStyle == null)
+			{
+				listNormalStyle = GUI.skin.label;
+			}
+
+			var listAltStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_NORMAL_ALT_STYLE_NAME);
+			if (listAltStyle == null)
+			{
+				listAltStyle = GUI.skin.label;
+			}
+
+			var listIconNormalStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_ICON_STYLE_NAME);
+			if (listIconNormalStyle == null)
+			{
+				listIconNormalStyle = GUI.skin.label;
+			}
+
+			var listIconAltStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.LIST_ICON_ALT_STYLE_NAME);
+			if (listIconAltStyle == null)
+			{
+				listIconAltStyle = GUI.skin.label;
+			}
+
 			bool useAlt = true;
 
-			GUILayout.BeginVertical(GUILayout.ExpandWidth(true));
-			GUILayout.Label("Scenes in Build:", BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME);
+			GUILayout.BeginVertical(BRT_BuildReportWindow.LayoutExpandWidth);
+			GUILayout.Label("Scenes in Build:", bigLabelStyle);
 
 			var prevColor = GUI.contentColor;
 
 			//GUILayout.BeginHorizontal();
 			// 1st column: name
-			GUILayout.BeginVertical(GUILayout.ExpandWidth(true));
+			GUILayout.BeginVertical(BRT_BuildReportWindow.LayoutExpandWidth);
 			var usedIdx = -1;
 			for (int n = 0; n < scenesInBuild.Length; ++n)
 			{
@@ -499,17 +613,13 @@ namespace BuildReportTool.Window.Screen
 					++usedIdx;
 				}
 
-				string styleToUse = useAlt
-					                    ? BuildReportTool.Window.Settings.LIST_NORMAL_ALT_STYLE_NAME
-					                    : BuildReportTool.Window.Settings.LIST_NORMAL_STYLE_NAME;
-				string iconStyleToUse = useAlt
-					                        ? BuildReportTool.Window.Settings.LIST_ICON_ALT_STYLE_NAME
-					                        : BuildReportTool.Window.Settings.LIST_ICON_STYLE_NAME;
+				var styleToUse = useAlt ? listAltStyle : listNormalStyle;
+				var iconStyleToUse = useAlt ? listIconAltStyle : listIconNormalStyle;
 
 
 				Texture icon = AssetDatabase.GetCachedIcon(scenesInBuild[n].Path);
 
-				GUILayout.BeginHorizontal(styleToUse, GUILayout.ExpandWidth(true));
+				GUILayout.BeginHorizontal(styleToUse, BRT_BuildReportWindow.LayoutExpandWidth);
 
 				// enabled status
 				//GUILayout.Toggle(scenesInBuild[n].Enabled, string.Empty, GUILayout.Width(20), GUILayout.Height(30));
@@ -518,7 +628,7 @@ namespace BuildReportTool.Window.Screen
 				if (icon == null)
 				{
 					//GUILayout.Space(22);
-					GUILayout.Label(string.Empty, iconStyleToUse, GUILayout.Width(28), GUILayout.Height(30));
+					GUILayout.Label(string.Empty, iconStyleToUse, BRT_BuildReportWindow.Layout28x30);
 				}
 				else
 				{
@@ -527,7 +637,7 @@ namespace BuildReportTool.Window.Screen
 						GUI.contentColor = new Color(1.0f, 1.0f, 1.0f, 0.4f);
 					}
 
-					GUILayout.Button(icon, iconStyleToUse, GUILayout.Width(28), GUILayout.Height(30));
+					GUILayout.Button(icon, iconStyleToUse, BRT_BuildReportWindow.Layout28x30);
 					if (!scenesInBuild[n].Enabled)
 					{
 						GUI.contentColor = prevColor;
@@ -538,14 +648,14 @@ namespace BuildReportTool.Window.Screen
 				// scene index
 				if (scenesInBuild[n].Enabled)
 				{
-					if (GUILayout.Button(usedIdx.ToString(), styleToUse, GUILayout.Width(20), GUILayout.Height(30)))
+					if (GUILayout.Button(usedIdx.ToString(), styleToUse, BRT_BuildReportWindow.Layout20x30))
 					{
 						Utility.PingAssetInProject(scenesInBuild[n].Path);
 					}
 				}
 				else
 				{
-					GUILayout.Label(string.Empty, iconStyleToUse, GUILayout.Width(20), GUILayout.Height(30));
+					GUILayout.Label(string.Empty, iconStyleToUse, BRT_BuildReportWindow.Layout20x30);
 				}
 
 				// path
@@ -558,7 +668,7 @@ namespace BuildReportTool.Window.Screen
 				else
 				{
 					var pathName = BuildReportTool.Util.GetAssetPath(scenesInBuild[n].Path);
-					var fileName = System.IO.Path.GetFileName(scenesInBuild[n].Path);
+					var fileName = scenesInBuild[n].Path.GetFileNameOnly();
 
 					if (scenesInBuild[n].Enabled)
 					{
@@ -574,8 +684,7 @@ namespace BuildReportTool.Window.Screen
 					}
 				}
 
-				if (GUILayout.Button(prettyName, styleToUse, GUILayout.MinWidth(100), GUILayout.Height(30),
-					GUILayout.ExpandWidth(true)))
+				if (GUILayout.Button(prettyName, styleToUse, BRT_BuildReportWindow.Layout100x30))
 				{
 					Utility.PingAssetInProject(scenesInBuild[n].Path);
 				}

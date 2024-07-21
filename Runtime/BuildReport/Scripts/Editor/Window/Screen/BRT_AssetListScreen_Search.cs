@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
 using UnityEditor;
 using FuzzyString;
-
 
 namespace BuildReportTool.Window.Screen
 {
@@ -110,7 +108,7 @@ namespace BuildReportTool.Window.Screen
 				string input;
 				if (searchFilenameOnly)
 				{
-					input = Path.GetFileName(assetListToSearchFrom[n].Name);
+					input = assetListToSearchFrom[n].Name.GetFileNameOnly();
 				}
 				else
 				{
@@ -118,25 +116,33 @@ namespace BuildReportTool.Window.Screen
 				}
 
 				bool assetIsMatch;
-				switch (searchType)
+
+				if (string.IsNullOrEmpty(input))
 				{
-					case SearchType.Regex:
-						try
-						{
-							assetIsMatch = System.Text.RegularExpressions.Regex.IsMatch(input, searchText, options);
-						}
-						catch (ArgumentException)
-						{
-							assetIsMatch = false;
-						}
-						break;
-					case SearchType.Fuzzy:
-						assetIsMatch = IsANearStringMatch(input, searchText);
-						break;
-					default:
-						// default is SearchType.Basic
-						assetIsMatch = System.Text.RegularExpressions.Regex.IsMatch(input, BuildReportTool.Util.WildCardToRegex(searchText), options);
-						break;
+					assetIsMatch = false;
+				}
+				else
+				{
+					switch (searchType)
+					{
+						case SearchType.Regex:
+							try
+							{
+								assetIsMatch = System.Text.RegularExpressions.Regex.IsMatch(input, searchText, options);
+							}
+							catch (ArgumentException)
+							{
+								assetIsMatch = false;
+							}
+							break;
+						case SearchType.Fuzzy:
+							assetIsMatch = IsANearStringMatch(input, searchText);
+							break;
+						default:
+							// default is SearchType.Basic
+							assetIsMatch = System.Text.RegularExpressions.Regex.IsMatch(input, BuildReportTool.Util.WildCardToRegex(searchText), options);
+							break;
+					}
 				}
 
 				if (assetIsMatch)

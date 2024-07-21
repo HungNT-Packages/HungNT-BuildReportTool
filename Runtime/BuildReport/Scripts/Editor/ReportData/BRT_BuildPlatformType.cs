@@ -6,6 +6,11 @@
 	/// Example: some platforms have a compressed build, some do not.
 	/// Also, native plugins are handled differently in each platform.
 	/// </summary>
+	/// <remarks>
+	/// Meant to be similar to <see cref="UnityEditor.BuildTarget"/>,
+	/// except here we don't mark any value obsolete, for backwards compatibility
+	/// with old Build Reports.
+	/// </remarks>
 	public enum BuildPlatform
 	{
 		None = 0,
@@ -16,6 +21,7 @@
 
 		Android = 1,
 		iOS,
+		tvOS,
 		Blackberry,
 		WindowsPhone8,
 		Tizen,
@@ -27,7 +33,7 @@
 
 		Web = 100,
 		Flash,
-		WebGL, // upcoming
+		WebGL,
 
 
 		// --------
@@ -48,31 +54,29 @@
 		Linux32 = 400,
 		Linux64,
 		LinuxUniversal,
+		LinuxHeadless,
+		EmbeddedLinux,
 
 
 		// ------
-		// Consoles (7th gen)
+		// Consoles
 		// ------
 
 		// currently not handled in any special way (probably needs to be):
-		XBOX360 = 500,
-		PS3,
-		Wii, // for posterity
 
+		Xbox360 = 500,
+		XboxOne,
+		XboxSeries,
 
-		// ------
-		// Consoles (8th gen)
-		// ------
-
-		XBOXOne = 600,
-
-		PS4,
+		PS3 = 600,
 		PSVitaNative,
 		PSMobile,
+		PS4,
+		PS5,
 
+		Wii = 700,
 		WiiU,
 		Nintendo3DS,
-
 		Switch,
 	}
 }

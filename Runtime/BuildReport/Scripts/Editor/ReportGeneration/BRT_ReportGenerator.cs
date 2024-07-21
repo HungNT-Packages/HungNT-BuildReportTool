@@ -14,6 +14,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using DldUtil;
+using UnityEditor.Compilation;
 
 /*
 
@@ -103,11 +104,19 @@ hopefully UT would provide proper script access to this
 
 namespace BuildReportTool
 {
+	public struct ExtraData
+	{
+		public string SavedPath;
+		public string Contents;
+	}
+
 	[System.Serializable]
 #if UNITY_2018_1_OR_NEWER
 	public partial class ReportGenerator : UnityEditor.Build.IPreprocessBuildWithReport, UnityEditor.Build.IPostprocessBuildWithReport
-#else
+#elif UNITY_5_6_OR_NEWER
 	public partial class ReportGenerator : UnityEditor.Build.IPreprocessBuild, UnityEditor.Build.IPostprocessBuild
+#else
+	public partial class ReportGenerator
 #endif
 	{
 		public int callbackOrder { get { return 99999; } }
@@ -115,7 +124,11 @@ namespace BuildReportTool
 		static BuildReportTool.BuildInfo _lastKnownBuildInfo;
 		static BuildReportTool.AssetDependencies _lastKnownAssetDependencies;
 		static BuildReportTool.TextureData _lastKnownTextureData;
+		static BuildReportTool.MeshData _lastKnownMeshData;
+		static BuildReportTool.PrefabData _lastKnownPrefabData;
 		static BuildReportTool.UnityBuildReport _lastKnownUnityBuildReport;
+
+		static Assembly[] _lastAssemblies;
 
 		public static BuildReportTool.UnityBuildReport LastKnownUnityBuildReport { get { return _lastKnownUnityBuildReport; } }
 
@@ -229,21 +242,6 @@ namespace BuildReportTool
 
 			// --------------------
 
-			if (fromBuild && BuildReportTool.Util.HasBuildTime())
-			{
-				var timeBuildStarted = BuildReportTool.Util.LoadBuildTime();
-				buildInfo.BuildDurationTime = BuildReportTool.Util.LoadBuildTimeDuration();
-
-				buildInfo.BuildTimeGot = timeBuildStarted;
-				buildInfo.BuildTimeGotReadable = timeBuildStarted.ToString(TIME_OF_BUILD_FORMAT);
-			}
-			else
-			{
-				buildInfo.BuildDurationTime = new TimeSpan(0);
-				buildInfo.BuildTimeGot = new DateTime();
-				buildInfo.BuildTimeGotReadable = string.Empty;
-			}
-
 			buildInfo.EditorAppContentsPath = EditorApplication.applicationContentsPath;
 			buildInfo.ProjectAssetsPath = Application.dataPath;
 
@@ -262,11 +260,19 @@ namespace BuildReportTool
 			}
 			buildInfo.IgnorePatternsForUnused = ignorePatternCopy;
 
+			buildInfo.ProcessUnusedAssetsInBatches = BuildReportTool.Options.ProcessUnusedAssetsInBatches;
 			buildInfo.UnusedAssetsEntriesPerBatch = BuildReportTool.Options.UnusedAssetsEntriesPerBatch;
 
 			// --------------------
 
-#if UNITY_5_6_OR_NEWER
+#if UNITY_2023_1_OR_NEWER
+			BuildTarget buildTarget = EditorUserBuildSettings.activeBuildTarget;
+			BuildTargetGroup targetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
+			var namedBuildTarget = UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(targetGroup);
+
+			buildInfo.MonoLevel =
+				PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget);
+#elif UNITY_5_6_OR_NEWER
 			buildInfo.MonoLevel =
 				PlayerSettings.GetApiCompatibilityLevel(EditorUserBuildSettings.selectedBuildTargetGroup);
 #else
@@ -293,9 +299,11 @@ namespace BuildReportTool
 
 			// --------------------
 
-			//#if (UNITY_4_1 || UNITY_4_2 || UNITY_4_3 || UNITY_4_4 || UNITY_4_5 || UNITY_4_6)
+#if UNITY_2023_1_OR_NEWER
+			buildInfo.AndroidUseAPKExpansionFiles = PlayerSettings.Android.splitApplicationBinary;
+#else
 			buildInfo.AndroidUseAPKExpansionFiles = PlayerSettings.Android.useAPKExpansionFiles;
-			//#endif
+#endif
 
 			buildInfo.AndroidCreateProject = buildInfo.BuildTargetUsed == BuildTarget.Android &&
 			                                 !Util.IsFileOfType(buildInfo.BuildFilePath, ".apk");
@@ -323,9 +331,65 @@ namespace BuildReportTool
 
 			// --------------------
 
-			//Debug.Log("getting _lastEditorLogPath");
-			_lastEditorLogPath = BuildReportTool.Util.UsedEditorLogPath;
+			bool gotExtraBuildData = false;
+
+			string regularEditorLogPath = BuildReportTool.Util.UsedEditorLogPath;
+			if (!DoesEditorLogHaveBuildInfo(regularEditorLogPath))
+			{
+				string lastSuccessfulBuildEditorLog =
+					BuildReportTool.Util.LastSuccessfulBuildFilePath(Application.dataPath);
+				if (DoesEditorLogHaveBuildInfo(lastSuccessfulBuildEditorLog))
+				{
+					bool playerDataNotRebuilt = DoesEditorLogHaveNoBuildInfoDueToNoPlayerRebuilt(regularEditorLogPath);
+
+					_lastEditorLogPath = lastSuccessfulBuildEditorLog;
+					if (playerDataNotRebuilt)
+					{
+						Debug.LogWarning($"No new build was created since no changes were detected. Do a clean build to force creation of a new build.\nReusing last successful build's Editor.log file from: {lastSuccessfulBuildEditorLog}");
+					}
+					else
+					{
+						Debug.LogWarning($"No build data found in {regularEditorLogPath}\nReusing last successful build's Editor.log file from: {lastSuccessfulBuildEditorLog}");
+					}
+
+					BuildReportTool.Util.LastBuildExtraData extraData =
+						BuildReportTool.Util.OpenSerialized<BuildReportTool.Util.LastBuildExtraData>(
+							BuildReportTool.Util.LastSuccessfulBuildExtraDataFilePath(Application.dataPath));
+					if (extraData != null && !playerDataNotRebuilt)
+					{
+						buildInfo.BuildDurationTime = extraData.GetBuildDuration();
+
+						buildInfo.BuildTimeGot = extraData.GetBuildTimeStarted();
+						buildInfo.BuildTimeGotReadable = buildInfo.BuildTimeGot.ToString(TIME_OF_BUILD_FORMAT);
+						gotExtraBuildData = true;
+					}
+				}
+			}
+			else
+			{
+				_lastEditorLogPath = regularEditorLogPath;
+			}
+
+			if (!gotExtraBuildData)
+			{
+				if (fromBuild && BuildReportTool.Util.HasBuildTime())
+				{
+					var timeBuildStarted = BuildReportTool.Util.LoadBuildTime();
+					buildInfo.BuildDurationTime = BuildReportTool.Util.LoadBuildTimeDuration();
+
+					buildInfo.BuildTimeGot = timeBuildStarted;
+					buildInfo.BuildTimeGotReadable = timeBuildStarted.ToString(TIME_OF_BUILD_FORMAT);
+				}
+				else
+				{
+					buildInfo.BuildDurationTime = new TimeSpan(0);
+					buildInfo.BuildTimeGot = new DateTime();
+					buildInfo.BuildTimeGotReadable = string.Empty;
+				}
+			}
+
 			_lastSavePath = BuildReportTool.Options.BuildReportSavePath;
+			_lastAssemblies = CompilationPipeline.GetAssemblies();
 		}
 
 #if UNITY_2018_1_OR_NEWER
@@ -344,8 +408,11 @@ namespace BuildReportTool
 
 #if UNITY_2018_1_OR_NEWER
 		public void OnPostprocessBuild(UnityEditor.Build.Reporting.BuildReport report)
-#else
+#elif UNITY_5_6_OR_NEWER
 		public void OnPostprocessBuild(BuildTarget target, string pathToBuiltProject)
+#else
+		[UnityEditor.Callbacks.PostProcessBuildAttribute(1)]
+		public static void OnPostprocessBuild(BuildTarget target, string pathToBuiltProject)
 #endif
 		{
 			if (!Application.isEditor || Application.isPlaying)
@@ -378,7 +445,7 @@ namespace BuildReportTool
 			// Note: useless to call Init() and CommitAdditionalInfoToCache() here since an assembly reload will happen
 
 			// Record the time it took to get from OnPreprocessBuild to now (OnPostprocessBuild)
-			// (this value is saved in EditorPrefs, so it will survive the assembly reload).
+			// (this value is saved in an xml file, so it will survive the assembly reload).
 			// Note: There's a report.summary.totalTime, but oftentimes it has a value of 00:00:00
 			// because report.summary.buildStartedAt and report.summary.buildEndedAt have the same value,
 			// so we rely on our own time recording instead. There's still the option to use the BuildSummary
@@ -402,15 +469,10 @@ namespace BuildReportTool
 #endif
 
 			// Later on, in BRT_BuildReportWindow.Update(),
-			// the code will finally create a build report when it can
-			// (this value is saved in EditorPrefs, so it will survive the assembly reload).
-			BuildReportTool.Util.ShouldGetBuildReportNow = true;
-
-			// Later on, in BRT_BuildReportWindow.Update(),
 			// when `BuildReportTool.ReportGenerator.IsFinishedGettingValuesFromThread` is true,
 			// the code will finally save the created build report
-			// (this value is saved in EditorPrefs, so it will survive the assembly reload).
-			BuildReportTool.Util.ShouldSaveGottenBuildReportNow = true;
+			// (this value is saved in an xml file, so it will survive the assembly reload).
+			BuildReportTool.Util.SaveGetBuildReportNow();
 
 			if (BRT_BuildReportWindow.IsOpen || BuildReportTool.Options.ShouldShowWindowAfterBuild)
 			{
@@ -496,6 +558,11 @@ namespace BuildReportTool
 
 		public static string GetBuildTypeFromEditorLog(string editorLogPath)
 		{
+			if (!File.Exists(editorLogPath))
+			{
+				return null;
+			}
+
 			const string BUILD_TYPE_KEY = "*** Completed 'Build.";
 			const string CANCELED_BUILD_TYPE_KEY = "*** Canceled 'Build.";
 
@@ -510,6 +577,11 @@ namespace BuildReportTool
 
 		static string GetBuildTypeFromEditorLog(string editorLogPath, string buildTypeKey)
 		{
+			if (!File.Exists(editorLogPath))
+			{
+				return null;
+			}
+
 			//Debug.Log("GetBuildTypeFromEditorLog path: " + editorLogPath);
 			var gotLines = DldUtil.BigFileReader.SeekAllText(editorLogPath, buildTypeKey);
 
@@ -564,6 +636,9 @@ namespace BuildReportTool
 			       line.IndexOf("1.$%", StringComparison.Ordinal) >= 0;
 		}
 
+		const string DATE_TIME_PREFIX =
+			@"\d{4}-(0[1-9]|1[012])-([012]\d|3[01])T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)\.\d{3}Z\|0x[\da-f]{4}\|";
+
 		static BuildReportTool.SizePart[] ParseSizePartsFromString(string editorLogPath)
 		{
 			// now parse the build parts to an array of `BuildReportTool.SizePart`
@@ -571,6 +646,9 @@ namespace BuildReportTool
 
 
 			const string SIZE_PARTS_KEY = "Textures      ";
+
+			bool gotDateTimePrefix = false;
+			int dateTimePrefixLen = 0;
 
 			foreach (string line in DldUtil.BigFileReader.ReadFile(editorLogPath, false, SIZE_PARTS_KEY))
 			{
@@ -587,7 +665,22 @@ namespace BuildReportTool
 				string gotSize = "?";
 				string gotPercent;
 
-				Match match = Regex.Match(b, @"^[a-z \t]+[^0-9]", RegexOptions.IgnoreCase);
+				if (!gotDateTimePrefix)
+				{
+					Match dateTime = Regex.Match(b, DATE_TIME_PREFIX, RegexOptions.IgnoreCase);
+					if (dateTime.Success)
+					{
+						dateTimePrefixLen = dateTime.Groups[0].Value.Length;
+						gotDateTimePrefix = true;
+						b = b.Substring(dateTimePrefixLen);
+					}
+				}
+				else
+				{
+					b = b.Substring(dateTimePrefixLen);
+				}
+
+				Match match = Regex.Match(b, @"[a-z \t]+[^0-9]", RegexOptions.IgnoreCase);
 				if (match.Success)
 				{
 					gotName = match.Groups[0].Value;
@@ -691,7 +784,7 @@ namespace BuildReportTool
 
 				//Debug.LogFormat("from line: {0}", line);
 
-				Match match = Regex.Match(input, @"^ [0-9].*[a-z0-9) ]$", RegexOptions.IgnoreCase);
+				Match match = Regex.Match(input, @"^.* [0-9]+\.[0-9]+ (kb|mb|b|gb|tb)\s+[0-9.]+%\s+.+", RegexOptions.IgnoreCase);
 				if (match.Success)
 				{
 					// it's an asset entry. parse it
@@ -749,7 +842,7 @@ namespace BuildReportTool
 						}
 					}
 
-					match = Regex.Match(input, @"[0-9.]+ (kb|mb|b|gb)", RegexOptions.IgnoreCase);
+					match = Regex.Match(input, @"[0-9.]+ (kb|mb|b|gb|tb)", RegexOptions.IgnoreCase);
 					if (match.Success)
 					{
 						gotSize = match.Groups[0].Value.ToUpper();
@@ -781,9 +874,9 @@ namespace BuildReportTool
 					//Debug.LogFormat("got: {0} size: {1} percent: {2}", gotName, gotSize, gotPercent);
 
 					// UnityEngine dll files show up in the used assets list so don't add them in
-					var filename = Path.GetFileName(gotName);
-					if (BuildReportTool.Util.IsFileOfType(filename, ".dll") &&
-					    BuildReportTool.Util.IsAUnityEngineDLL(filename))
+					// (those will be in a separate list)
+					var filename = gotName.GetFileNameOnly();
+					if (filename.IsFileOfType(".dll") && BuildReportTool.Util.IsAUnityEngineDLL(filename))
 					{
 						//Debug.Log("Found UnityEngine dll in Used Assets: " + filename);
 					}
@@ -908,7 +1001,7 @@ namespace BuildReportTool
 
 		public static void MoveUnusedAssetsBatchToPrev(BuildInfo buildInfo, FileFilterGroup filtersToUse)
 		{
-			if (buildInfo.UnusedAssetsBatchNum == 0)
+			if (buildInfo.UnusedAssetsBatchIdx == 0)
 			{
 				return;
 			}
@@ -931,11 +1024,7 @@ namespace BuildReportTool
 				BuildPlatform buildPlatform = GetBuildPlatformFromString(buildInfo.BuildType, buildInfo.BuildTargetUsed);
 
 
-				allUnused = GetAllUnusedAssets(buildInfo.ScriptDLLs, buildInfo.ProjectAssetsPath,
-					buildInfo.IncludedSvnInUnused, buildInfo.IncludedGitInUnused, buildInfo.IncludedBuildReportToolAssetsInUnused,
-					buildInfo.IgnorePatternsForUnused, buildPlatform,
-					buildInfo.UnusedPrefabsIncludedInCreation, buildInfo.UnusedAssetsBatchNum,
-					buildInfo.UnusedAssetsEntriesPerBatch, allUsed);
+				allUnused = GetAllUnusedAssets(buildInfo, buildInfo.ProjectAssetsPath, buildPlatform, allUsed);
 
 				if (allUnused != null && allUnused.Length > 0)
 				{
@@ -986,15 +1075,20 @@ namespace BuildReportTool
 		}
 
 		static BuildReportTool.SizePart[] GetAllUnusedAssets(
-			BuildReportTool.SizePart[] scriptDLLs,
+			BuildReportTool.BuildInfo buildInfo,
 			string projectAssetsPath,
-			bool includeSvn, bool includeGit, bool includeBrt, List<SavedOptions.IgnorePattern> ignorePatterns,
 			BuildPlatform buildPlatform,
-			bool includeUnusedPrefabs,
-			int fileCountBatchSkip, int fileCountLimit,
-			//Dictionary<string, bool> usedAssetsDict,
 			List<BuildReportTool.SizePart> inOutAllUsedAssets)
 		{
+			BuildReportTool.SizePart[] scriptDLLs = buildInfo.ScriptDLLs;
+			bool includeSvn = buildInfo.IncludedSvnInUnused;
+			bool includeGit = buildInfo.IncludedGitInUnused;
+			bool includeBrt = buildInfo.IncludedBuildReportToolAssetsInUnused;
+			List<SavedOptions.IgnorePattern> ignorePatterns = buildInfo.IgnorePatternsForUnused;
+			bool includeUnusedPrefabs = buildInfo.UnusedPrefabsIncludedInCreation;
+			bool processInBatches = buildInfo.ProcessUnusedAssetsInBatches;
+			int fileCountLimit = buildInfo.UnusedAssetsEntriesPerBatch;
+
 			List<BuildReportTool.SizePart> unusedAssets = new List<BuildReportTool.SizePart>();
 
 
@@ -1009,22 +1103,40 @@ namespace BuildReportTool
 			bool has64BitPluginsFolder = Directory.Exists(projectAssetsPath + "/Plugins/x86_64");
 
 			string currentAsset;
+			bool prevSkipped = false;
 
-			int assetIdx = 0;
+			int assetNum = 0;
 
-			int fileCountOffset = fileCountBatchSkip * fileCountLimit;
+			int fileCountOffset;
+			if (buildInfo.UnusedAssetsBatchIdx > 0 &&
+			    buildInfo.UnusedAssetsBatchIdx <= buildInfo.UnusedAssetsBatchFinalNum.Count)
+			{
+				// use the asset num of the previous batch
+				fileCountOffset = buildInfo.UnusedAssetsBatchFinalNum[buildInfo.UnusedAssetsBatchIdx-1];
+			}
+			else
+			{
+				// just guess based on the batch count
+				fileCountOffset = buildInfo.UnusedAssetsBatchIdx * fileCountLimit;
+			}
 
 			foreach (string fullAssetPath in DldUtil.TraverseDirectory.Do(projectAssetsPath))
 			{
-				++assetIdx;
+				++assetNum;
 
-				if (assetIdx < fileCountOffset)
+				if (processInBatches && assetNum <= fileCountOffset)
 				{
+					prevSkipped = true;
 					continue;
 				}
 
+				if (prevSkipped)
+				{
+					prevSkipped = false;
+				}
+
 				BRT_BuildReportWindow.GetValueMessage =
-					string.Format("Getting list of used assets {0} ...", assetIdx.ToString());
+					string.Format("Getting list of used assets {0} ...", assetNum.ToString());
 
 				//string fullAssetPath = allAssets[assetIdx];
 
@@ -1121,7 +1233,7 @@ namespace BuildReportTool
 
 				if (Util.IsFileOfType(currentAsset, ".dll"))
 				{
-					string assetFilenameOnly = System.IO.Path.GetFileName(currentAsset);
+					string assetFilenameOnly = currentAsset.GetFileNameOnly();
 					//Debug.Log(assetFilenameOnly);
 
 					bool foundMatch = false;
@@ -1444,7 +1556,7 @@ namespace BuildReportTool
 				// check prefabs only when requested to do so
 				if (Util.IsFileOfType(currentAsset, ".prefab"))
 				{
-					//Debug.Log("GetAllUnusedAssets: found prefab: " + System.IO.Path.GetFileName(currentAsset));
+					//Debug.Log("GetAllUnusedAssets: found prefab: " + currentAsset.GetFileNameOnly());
 					if (!includeUnusedPrefabs)
 					{
 						continue;
@@ -1472,11 +1584,17 @@ namespace BuildReportTool
 					unusedAssets.Add(BuildReportTool.Util.CreateSizePartFromFile(currentAsset, fullAssetPath));
 				}
 
-				if (unusedAssets.Count >= fileCountLimit)
+				if (processInBatches && unusedAssets.Count >= fileCountLimit)
 				{
 					break;
 				}
 			}
+
+			while (buildInfo.UnusedAssetsBatchFinalNum.Count <= buildInfo.UnusedAssetsBatchIdx)
+			{
+				buildInfo.UnusedAssetsBatchFinalNum.Add(0);
+			}
+			buildInfo.UnusedAssetsBatchFinalNum[buildInfo.UnusedAssetsBatchIdx] = assetNum;
 
 			return unusedAssets.ToArray();
 		}
@@ -1524,7 +1642,7 @@ namespace BuildReportTool
 			{
 				foreach (string filepath in DldUtil.TraverseDirectory.Do(buildManagedDLLsFolder))
 				{
-					var filename = Path.GetFileName(filepath);
+					var filename = filepath.GetFileNameOnly();
 
 					if (BuildReportTool.Util.IsFileOfType(filename, ".dll"))
 					{
@@ -1585,6 +1703,8 @@ namespace BuildReportTool
 
 				const string MONO_DLL_KEY = "Mono dependencies included in the build";
 
+				bool gotDateTimePrefix = false;
+				int dateTimePrefixLen = 0;
 
 				foreach (string line in DldUtil.BigFileReader.ReadFile(editorLogPath, MONO_DLL_KEY))
 				{
@@ -1600,9 +1720,27 @@ namespace BuildReportTool
 					}
 
 					string filename = line;
+					if (!gotDateTimePrefix)
+					{
+						Match dateTime = Regex.Match(filename, DATE_TIME_PREFIX, RegexOptions.IgnoreCase);
+						if (dateTime.Success)
+						{
+							dateTimePrefixLen = dateTime.Groups[0].Value.Length;
+							gotDateTimePrefix = true;
+							filename = filename.Substring(dateTimePrefixLen);
+						}
+					}
+					else
+					{
+						filename = filename.Substring(dateTimePrefixLen);
+					}
+
+					if (!filename.StartsWith(PREFIX_REMOVE))
+					{
+						continue;
+					}
 
 					filename = BuildReportTool.Util.RemovePrefix(PREFIX_REMOVE, filename);
-
 
 					string filepath;
 					if (BuildReportTool.Util.IsAScriptDLL(filename))
@@ -1646,6 +1784,10 @@ namespace BuildReportTool
 					if (BuildReportTool.Util.IsAUnityEngineDLL(filename))
 					{
 						unityEngineDLLsList.Add(inPart);
+					}
+					else if (BuildReportTool.Util.IsAKnownSystemDLL(filename))
+					{
+						systemDLLsList.Add(inPart);
 					}
 					else if (BuildReportTool.Util.IsAScriptDLL(filename) || !File.Exists(unityFolderManagedDLLs + filename))
 					{
@@ -1703,9 +1845,17 @@ namespace BuildReportTool
 		const string NO_BUILD_INFO_OVERRIDDEN_LOG_WARNING =
 			"Build Report Tool: No build info found.\n\nWarning: Build Report Tool is configured to use a custom log file to obtain build data from ({0}). Perhaps this was not intended?\n\nClear the override log in Build Report Tool's Options, or set the EditorLogOverridePath tag to empty in {1}.\n\n";
 
+		const string NO_BUILD_INFO_NO_PLAYER_REBUILT =
+			"Information on used Assets is not available, since player data was not rebuilt.";
+
 		public static bool DoesEditorLogHaveBuildInfo(string editorLogPath)
 		{
 			return DldUtil.BigFileReader.FileHasText(editorLogPath, ASSET_SIZES_KEY, ASSET_SIZES_KEY_2);
+		}
+
+		public static bool DoesEditorLogHaveNoBuildInfoDueToNoPlayerRebuilt(string editorLogPath)
+		{
+			return DldUtil.BigFileReader.FileHasText(editorLogPath, NO_BUILD_INFO_NO_PLAYER_REBUILT);
 		}
 
 		public static BuildSettingCategory GetBuildSettingCategoryFromBuildValues(BuildInfo buildReport)
@@ -1755,16 +1905,28 @@ namespace BuildReportTool
 
 				case BuildPlatform.iOS:
 					return BuildSettingCategory.iOS;
+				case BuildPlatform.tvOS:
+					return BuildSettingCategory.tvOS;
 				case BuildPlatform.Android:
 					return BuildSettingCategory.Android;
 				case BuildPlatform.Blackberry:
 					return BuildSettingCategory.Blackberry;
 
 
-				case BuildPlatform.XBOX360:
+				case BuildPlatform.Xbox360:
 					return BuildSettingCategory.Xbox360;
+				case BuildPlatform.XboxOne:
+					return BuildSettingCategory.XboxOne;
+				case BuildPlatform.XboxSeries:
+					return BuildSettingCategory.XboxSeries;
 				case BuildPlatform.PS3:
 					return BuildSettingCategory.PS3;
+				case BuildPlatform.PS4:
+					return BuildSettingCategory.PS4;
+				case BuildPlatform.PS5:
+					return BuildSettingCategory.PS5;
+				case BuildPlatform.Switch:
+					return BuildSettingCategory.Switch;
 			}
 
 			return BuildSettingCategory.None;
@@ -1796,6 +1958,10 @@ namespace BuildReportTool
 			else if (gotBuildType.IndexOf("iOS", StringComparison.Ordinal) != -1)
 			{
 				buildPlatform = BuildPlatform.iOS;
+			}
+			else if (gotBuildType.IndexOf("tvOS", StringComparison.Ordinal) != -1)
+			{
+				buildPlatform = BuildPlatform.tvOS;
 			}
 
 			// browser
@@ -1835,6 +2001,17 @@ namespace BuildReportTool
 				// unfortunately we don't know if this is a 32-bit or universal build
 				// we'll have to rely on current build settings which may be inaccurate
 				buildPlatform = BuildReportTool.Util.GetBuildPlatformBasedOnUnityBuildTarget(buildTarget);
+
+				if (buildPlatform != BuildPlatform.Linux32 &&
+				    buildPlatform != BuildPlatform.Linux64 &&
+				    buildPlatform != BuildPlatform.LinuxUniversal &&
+				    buildPlatform != BuildPlatform.LinuxHeadless &&
+				    buildPlatform != BuildPlatform.EmbeddedLinux)
+				{
+					// build platform was not detected properly
+					// default to 64-bit Linux
+					buildPlatform = BuildPlatform.Linux64;
+				}
 			}
 
 			// Mac OS X
@@ -1844,6 +2021,15 @@ namespace BuildReportTool
 				// unfortunately we don't know if this is a 32-bit, 64-bit, or universal build
 				// we'll have to rely on current build settings which may be inaccurate
 				buildPlatform = BuildReportTool.Util.GetBuildPlatformBasedOnUnityBuildTarget(buildTarget);
+
+				if (buildPlatform != BuildPlatform.MacOSX32 &&
+				    buildPlatform != BuildPlatform.MacOSX64 &&
+				    buildPlatform != BuildPlatform.MacOSXUniversal)
+				{
+					// build platform was not detected properly
+					// default to 64-bit Mac
+					buildPlatform = BuildPlatform.MacOSX64;
+				}
 			}
 
 			// ???
@@ -2226,23 +2412,49 @@ namespace BuildReportTool
 
 			if (!DoesEditorLogHaveBuildInfo(_lastEditorLogPath))
 			{
-				if (BuildReportTool.Util.IsDefaultEditorLogPathOverridden)
+				string lastSuccessfulBuildEditorLog = BuildReportTool.Util.LastSuccessfulBuildFilePath(projectAssetsPath);
+				if (DoesEditorLogHaveBuildInfo(lastSuccessfulBuildEditorLog))
 				{
-					Debug.LogWarning(string.Format(NO_BUILD_INFO_OVERRIDDEN_LOG_WARNING, _lastEditorLogPath,
-						BuildReportTool.Options.FoundPathForSavedOptions));
-				}
-				else if (CheckIfUnityHasNoLogArgument())
-				{
-					Debug.LogWarning(NO_BUILD_INFO_NO_LOG_WARNING);
+					_lastEditorLogPath = lastSuccessfulBuildEditorLog;
+					Debug.Log($"Reusing last successful build editor log file from: {lastSuccessfulBuildEditorLog}");
 				}
 				else
 				{
-					Debug.LogWarning(NO_BUILD_INFO_WARNING);
-				}
+					if (BuildReportTool.Util.IsDefaultEditorLogPathOverridden)
+					{
+						Debug.LogWarning(string.Format(NO_BUILD_INFO_OVERRIDDEN_LOG_WARNING, _lastEditorLogPath,
+							BuildReportTool.Options.FoundPathForSavedOptions));
+					}
+					else if (CheckIfUnityHasNoLogArgument())
+					{
+						Debug.LogWarning(NO_BUILD_INFO_NO_LOG_WARNING);
+					}
+					else
+					{
+						Debug.LogWarning(NO_BUILD_INFO_WARNING);
+					}
 
-				return;
+					return;
+				}
 			}
 
+			if (BuildReportTool.Options.KeepCopyOfLogOfLastSuccessfulBuild &&
+			    !BuildReportTool.Util.IsDefaultEditorLogPathOverridden &&
+			    !BuildReportTool.Util.IsUsingLastSuccessfulEditorLog(_lastEditorLogPath))
+			{
+				// make a copy of the Editor log file first
+				// save it in the Library as Editor-LastSuccessfulBuild.log
+				string lastSuccessfulBuildEditorLog = BuildReportTool.Util.LastSuccessfulBuildFilePath(projectAssetsPath);
+				File.Copy(_lastEditorLogPath, lastSuccessfulBuildEditorLog, true);
+				Debug.Log($"Copied: {_lastEditorLogPath} to: {lastSuccessfulBuildEditorLog}");
+
+				// also save other pertinent information like build time
+				var buildExtraData = new BuildReportTool.Util.LastBuildExtraData();
+				buildExtraData.SetBuildTimeStarted(buildInfo.BuildTimeGot);
+				buildExtraData.SetBuildDuration(buildInfo.BuildDurationTime);
+
+				BuildReportTool.Util.Serialize(buildExtraData, BuildReportTool.Util.LastSuccessfulBuildExtraDataFilePath(projectAssetsPath));
+			}
 
 			// ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 			// determining build platform based on editor log
@@ -2548,6 +2760,35 @@ namespace BuildReportTool
 					}
 				}
 
+				// remove scripts that aren't included in the build
+				// by checking if the assembly they belong to is not in the build
+				if (_lastAssemblies != null)
+				{
+					foreach (Assembly assembly in _lastAssemblies)
+					{
+						string assemblyFilename = Path.GetFileName(assembly.outputPath);
+
+						if (buildInfo.ScriptDLLs.Exists(assemblyFilename) ||
+						    buildInfo.UnityEngineDLLs.Exists(assemblyFilename))
+						{
+							continue;
+						}
+
+						// this is an assembly that isn't included in the build
+						// any source file of this assembly shouldn't be in the used list
+						foreach (string sourceFile in assembly.sourceFiles)
+						{
+							int sourceFileIdxInAllUsed = allUsed.FindIdx(sourceFile);
+							if (sourceFileIdxInAllUsed == -1)
+							{
+								continue;
+							}
+
+							allUsed.RemoveAt(sourceFileIdxInAllUsed);
+						}
+					}
+				}
+
 				//Debug.Log("buildInfo.UsedAssets.All: " + buildInfo.UsedAssets.All.Length);
 
 				if (buildInfo.UnusedAssetsIncludedInCreation)
@@ -2557,12 +2798,8 @@ namespace BuildReportTool
 					BuildReportTool.SizePart[] allUnused;
 					BuildReportTool.SizePart[][] perCategoryUnused;
 
-
-					allUnused = GetAllUnusedAssets(buildInfo.ScriptDLLs, projectAssetsPath, buildInfo.IncludedSvnInUnused,
-						buildInfo.IncludedGitInUnused, buildInfo.IncludedBuildReportToolAssetsInUnused,
-						buildInfo.IgnorePatternsForUnused, buildPlatform,
-						buildInfo.UnusedPrefabsIncludedInCreation, 0,
-						buildInfo.UnusedAssetsEntriesPerBatch, allUsed);
+					buildInfo.ResetUnusedAssetsBatchData();
+					allUnused = GetAllUnusedAssets(buildInfo, projectAssetsPath, buildPlatform, allUsed);
 
 					perCategoryUnused = SegregateAssetSizesPerCategory(allUnused, buildInfo.FileFilters);
 
@@ -2590,19 +2827,19 @@ namespace BuildReportTool
 			{
 				if (b1.SizeBytes > b2.SizeBytes) return -1;
 				if (b1.SizeBytes < b2.SizeBytes) return 1;
-				return 0;
+				return string.Compare(b1.Name, b2.Name, StringComparison.Ordinal);
 			});
 			Array.Sort(buildInfo.UnityEngineDLLs, delegate(BuildReportTool.SizePart b1, BuildReportTool.SizePart b2)
 			{
 				if (b1.SizeBytes > b2.SizeBytes) return -1;
 				if (b1.SizeBytes < b2.SizeBytes) return 1;
-				return 0;
+				return string.Compare(b1.Name, b2.Name, StringComparison.Ordinal);
 			});
 			Array.Sort(buildInfo.ScriptDLLs, delegate(BuildReportTool.SizePart b1, BuildReportTool.SizePart b2)
 			{
 				if (b1.SizeBytes > b2.SizeBytes) return -1;
 				if (b1.SizeBytes < b2.SizeBytes) return 1;
-				return 0;
+				return string.Compare(b1.Name, b2.Name, StringComparison.Ordinal);
 			});
 
 			//foreach (string d in EditorUserBuildSettings.activeScriptCompilationDefines)
@@ -2666,32 +2903,38 @@ namespace BuildReportTool
 		/// <param name="textureData"></param>
 		/// <returns></returns>
 		public static bool RefreshData(bool fromBuild, ref BuildReportTool.BuildInfo buildInfo,
-			ref BuildReportTool.AssetDependencies assetDependencies, ref BuildReportTool.TextureData textureData)
+			ref BuildReportTool.AssetDependencies assetDependencies, ref BuildReportTool.TextureData textureData,
+			ref BuildReportTool.MeshData meshData, ref BuildReportTool.PrefabData prefabData)
 		{
 			// this would have been set to true in BuildReportTool.ReportGenerator.OnPostprocessBuild
 			// which allowed BRT_BuildReportWindow.OnInspectorUpdate() to get here
-			if (BuildReportTool.Util.ShouldGetBuildReportNow)
-			{
-				BuildReportTool.Util.ShouldGetBuildReportNow = false;
-			}
+			BuildReportTool.Util.ClearShouldGetBuildReportNow();
 
 			if (!DoesEditorLogHaveBuildInfo(BuildReportTool.Util.UsedEditorLogPath))
 			{
-				if (BuildReportTool.Util.IsDefaultEditorLogPathOverridden)
+				string lastSuccessfulBuildEditorLog = BuildReportTool.Util.LastSuccessfulBuildFilePath(Application.dataPath);
+				if (DoesEditorLogHaveBuildInfo(lastSuccessfulBuildEditorLog))
 				{
-					Debug.LogWarning(string.Format(NO_BUILD_INFO_OVERRIDDEN_LOG_WARNING,
-						BuildReportTool.Util.UsedEditorLogPath, BuildReportTool.Options.FoundPathForSavedOptions));
-				}
-				else if (CheckIfUnityHasNoLogArgument())
-				{
-					Debug.LogWarning(NO_BUILD_INFO_NO_LOG_WARNING);
+					_lastEditorLogPath = lastSuccessfulBuildEditorLog;
 				}
 				else
 				{
-					Debug.LogWarning(NO_BUILD_INFO_WARNING);
-				}
+					if (BuildReportTool.Util.IsDefaultEditorLogPathOverridden)
+					{
+						Debug.LogWarning(string.Format(NO_BUILD_INFO_OVERRIDDEN_LOG_WARNING,
+							BuildReportTool.Util.UsedEditorLogPath, BuildReportTool.Options.FoundPathForSavedOptions));
+					}
+					else if (CheckIfUnityHasNoLogArgument())
+					{
+						Debug.LogWarning(NO_BUILD_INFO_NO_LOG_WARNING);
+					}
+					else
+					{
+						Debug.LogWarning(NO_BUILD_INFO_WARNING);
+					}
 
-				return false;
+					return false;
+				}
 			}
 
 			// --------------------
@@ -2734,6 +2977,47 @@ namespace BuildReportTool
 				}
 
 				textureData.TimeGot = timeBuildStarted;
+			}
+			else
+			{
+				if (textureData != null)
+				{
+					textureData.Clear();
+				}
+			}
+
+			if (BuildReportTool.Options.CollectMeshData)
+			{
+				if (meshData == null)
+				{
+					meshData = new BuildReportTool.MeshData();
+				}
+
+				meshData.TimeGot = timeBuildStarted;
+			}
+			else
+			{
+				if (meshData != null)
+				{
+					meshData.Clear();
+				}
+			}
+
+			if (BuildReportTool.Options.CollectPrefabData)
+			{
+				if (prefabData == null)
+				{
+					prefabData = new BuildReportTool.PrefabData();
+				}
+
+				prefabData.TimeGot = timeBuildStarted;
+			}
+			else
+			{
+				if (prefabData != null)
+				{
+					prefabData.Clear();
+				}
 			}
 
 			// --------------------
@@ -2820,7 +3104,9 @@ namespace BuildReportTool
 			// the next part of the code that gets executed is BRT_BuildReportWindow.OnFinishGeneratingBuildReport()
 		}
 
-		public static string OnFinishedGetValues(BuildReportTool.BuildInfo buildInfo, BuildReportTool.AssetDependencies assetDependencies, BuildReportTool.TextureData textureData)
+		public static string OnFinishedGetValues(BuildReportTool.BuildInfo buildInfo,
+			BuildReportTool.AssetDependencies assetDependencies, BuildReportTool.TextureData textureData,
+			BuildReportTool.MeshData meshData, BuildReportTool.PrefabData prefabData, string customSavePath = null)
 		{
 			string resultingFilePath = null;
 
@@ -2907,6 +3193,44 @@ namespace BuildReportTool
 
 			// ------------------------------
 
+			if (BuildReportTool.Options.CollectMeshData)
+			{
+				meshData.ProjectName = buildInfo.ProjectName;
+				meshData.BuildType = buildInfo.BuildType;
+
+				if (BuildReportTool.Options.CollectMeshDataOnUnusedToo)
+				{
+					BuildReportTool.MeshDataGenerator.CreateForAllAssets(meshData, buildInfo,
+#if BRT_MESH_DATA_DEBUG
+						true
+#else
+						false
+#endif
+					);
+				}
+				else
+				{
+					BuildReportTool.MeshDataGenerator.CreateForUsedAssetsOnly(meshData, buildInfo,
+#if BRT_MESH_DATA_DEBUG
+						true
+#else
+						false
+#endif
+					);
+				}
+			}
+
+			// ------------------------------
+
+			if (BuildReportTool.Options.CollectPrefabData)
+			{
+				prefabData.ProjectName = buildInfo.ProjectName;
+				prefabData.BuildType = buildInfo.BuildType;
+
+				BuildReportTool.PrefabDataGenerator.CreateForUsedAssetsOnly(prefabData, buildInfo);
+			}
+
+			// ------------------------------
 			// BuildReportTool.Util.ShouldSaveGottenBuildReportNow was set to true on
 			// BuildReportTool.ReportGenerator.OnPostprocessBuild,
 			// which is called automatically after a build
@@ -2915,16 +3239,30 @@ namespace BuildReportTool
 			{
 				BuildReportTool.Util.ShouldSaveGottenBuildReportNow = false;
 
-				resultingFilePath = BuildReportTool.Util.SerializeAtFolder(buildInfo, _lastSavePath);
+				string savePathToUse = string.IsNullOrEmpty(customSavePath)
+					? _lastSavePath
+					: customSavePath;
+
+				resultingFilePath = BuildReportTool.Util.SerializeAtFolder(buildInfo, savePathToUse);
 
 				if (BuildReportTool.Options.CalculateAssetDependencies)
 				{
-					BuildReportTool.Util.SerializeAtFolder(assetDependencies, _lastSavePath);
+					BuildReportTool.Util.SerializeAtFolder(assetDependencies, savePathToUse);
 				}
 
 				if (BuildReportTool.Options.CollectTextureImportSettings)
 				{
-					BuildReportTool.Util.SerializeAtFolder(textureData, _lastSavePath);
+					BuildReportTool.Util.SerializeAtFolder(textureData, savePathToUse);
+				}
+
+				if (BuildReportTool.Options.CollectMeshData)
+				{
+					BuildReportTool.Util.SerializeAtFolder(meshData, savePathToUse);
+				}
+
+				if (BuildReportTool.Options.CollectPrefabData)
+				{
+					BuildReportTool.Util.SerializeAtFolder(prefabData, savePathToUse);
 				}
 			}
 

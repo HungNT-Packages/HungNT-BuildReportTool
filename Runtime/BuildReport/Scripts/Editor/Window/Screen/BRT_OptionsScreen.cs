@@ -3,7 +3,6 @@ using UnityEditor;
 using System.Text.RegularExpressions;
 using UnityEditorInternal;
 
-
 namespace BuildReportTool.Window.Screen
 {
 	public class Options : BaseScreen
@@ -160,7 +159,8 @@ namespace BuildReportTool.Window.Screen
 		Vector2 _assetListScrollPos;
 
 
-		public override void RefreshData(BuildInfo buildReport, AssetDependencies assetDependencies, TextureData textureData, UnityBuildReport unityBuildReport)
+		public override void RefreshData(BuildInfo buildReport, AssetDependencies assetDependencies,
+			TextureData textureData, MeshData meshData, PrefabData prefabData, UnityBuildReport unityBuildReport)
 		{
 			if (_saveTypeLabels == null)
 			{
@@ -197,10 +197,10 @@ namespace BuildReportTool.Window.Screen
 		Texture2D _iconInvalid;
 
 		public override void DrawGUI(Rect position,
-			BuildInfo buildReportToDisplay, AssetDependencies assetDependencies, TextureData textureData,
-			UnityBuildReport unityBuildReport,
-			out bool requestRepaint
-		)
+			BuildInfo buildReportToDisplay, AssetDependencies assetDependencies,
+			TextureData textureData, MeshData meshData, PrefabData prefabData,
+			UnityBuildReport unityBuildReport, BuildReportTool.ExtraData extraData,
+			out bool requestRepaint)
 		{
 			if (Event.current.type == EventType.Repaint)
 			{
@@ -224,6 +224,24 @@ namespace BuildReportTool.Window.Screen
 				requestRepaint = false;
 			}
 
+			var boxedLabelStyle = GUI.skin.FindStyle(BuildReportTool.Window.Settings.BOXED_LABEL_STYLE_NAME);
+			if (boxedLabelStyle == null)
+			{
+				boxedLabelStyle = GUI.skin.box;
+			}
+
+			var header1Style = GUI.skin.FindStyle(BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME);
+			if (header1Style == null)
+			{
+				header1Style = GUI.skin.label;
+			}
+
+			var header2Style = GUI.skin.FindStyle(BuildReportTool.Window.Settings.SUB_TITLE_STYLE_NAME);
+			if (header2Style == null)
+			{
+				header2Style = GUI.skin.label;
+			}
+
 			var prevEnabled = GUI.enabled;
 
 			GUILayout.Space(10); // extra top padding
@@ -237,7 +255,7 @@ namespace BuildReportTool.Window.Screen
 
 			if (!string.IsNullOrEmpty(BuildReportTool.Options.FoundPathForSavedOptions))
 			{
-				GUILayout.BeginHorizontal(BuildReportTool.Window.Settings.BOXED_LABEL_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+				GUILayout.BeginHorizontal(boxedLabelStyle, BRT_BuildReportWindow.LayoutNone);
 				GUILayout.Label(string.Format("Using options file in: {0}",
 					BuildReportTool.Options.FoundPathForSavedOptions), BRT_BuildReportWindow.LayoutNone);
 				GUILayout.FlexibleSpace();
@@ -253,7 +271,7 @@ namespace BuildReportTool.Window.Screen
 
 			// === Main Options ===
 
-			GUILayout.Label("Main Options", BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Label("Main Options", header1Style, BRT_BuildReportWindow.LayoutNone);
 
 
 			BuildReportTool.Options.CollectBuildInfo = GUILayout.Toggle(BuildReportTool.Options.CollectBuildInfo,
@@ -261,8 +279,8 @@ namespace BuildReportTool.Window.Screen
 			GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutNone);
 			GUILayout.Space(20);
 			GUILayout.Label(
-				"Note: For batchmode builds, to create build reports, call <b>BuildReportTool.ReportGenerator.CreateReport()</b> after <b>BuildPipeline.BuildPlayer()</b> in your build scripts.\n\nAlso call <b>BuildReportTool.ReportGenerator.OnPreBuild()</b> in your <b>OnPreprocessBuild()</b> methods so the build time can be recorded properly.\n\nThe Build Report is automatically saved as an XML file.",
-				BuildReportTool.Window.Settings.BOXED_LABEL_STYLE_NAME, LayoutMaxWidth593);
+				"Note: For batchmode builds, to create build reports, call <b>BuildReportTool.ReportGenerator.CreateReport()</b> after <b>BuildPipeline.BuildPlayer()</b> in your build scripts.\n\nThe Build Report is automatically saved as an XML file.",
+				boxedLabelStyle, LayoutMaxWidth593);
 			GUILayout.EndHorizontal();
 			GUILayout.Space(10);
 
@@ -280,6 +298,13 @@ namespace BuildReportTool.Window.Screen
 
 			GUILayout.Space(20);
 
+			BuildReportTool.Options.KeepCopyOfLogOfLastSuccessfulBuild = GUILayout.Toggle(
+				BuildReportTool.Options.KeepCopyOfLogOfLastSuccessfulBuild,
+				"Keep a copy of the last successful build's Editor.log, which will be re-used if no build was detected in the current Editor.log.",
+				BRT_BuildReportWindow.LayoutNone);
+
+			GUILayout.Space(20);
+
 			BuildReportTool.Options.UseThreadedReportGeneration = GUILayout.Toggle(
 				BuildReportTool.Options.UseThreadedReportGeneration,
 				"When generating Build Reports, use a separate thread", BRT_BuildReportWindow.LayoutNone);
@@ -287,7 +312,7 @@ namespace BuildReportTool.Window.Screen
 			GUILayout.Space(20);
 			GUILayout.Label(
 				"Note: For batchmode builds, report generation with <b>BuildReportTool.ReportGenerator.CreateReport()</b> is always non-threaded.",
-				BuildReportTool.Window.Settings.BOXED_LABEL_STYLE_NAME, LayoutMaxWidth593);
+				boxedLabelStyle, LayoutMaxWidth593);
 			GUILayout.EndHorizontal();
 			GUILayout.Space(10);
 
@@ -301,7 +326,7 @@ namespace BuildReportTool.Window.Screen
 
 			// === Data to include in the Build Report ===
 
-			GUILayout.Label("Data to include in the Build Report", BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Label("Data to include in the Build Report", header1Style, BRT_BuildReportWindow.LayoutNone);
 
 			GUILayout.Space(5);
 
@@ -329,7 +354,7 @@ namespace BuildReportTool.Window.Screen
 			#endregion
 
 			GUILayout.Space(10);
-			GUILayout.Label("Sizes", BuildReportTool.Window.Settings.SUB_TITLE_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Label("Sizes", header2Style, BRT_BuildReportWindow.LayoutNone);
 
 			BuildReportTool.Options.IncludeBuildSizeInReportCreation = GUILayout.Toggle(
 				BuildReportTool.Options.IncludeBuildSizeInReportCreation,
@@ -386,8 +411,45 @@ namespace BuildReportTool.Window.Screen
 				"This bug has already been fixed in Unity 2017.1, 5.5.3p1 and 5.6.0p1. Only enable this if you are affected by the bug.", BRT_BuildReportWindow.LayoutNone);
 			#endregion
 
+			GUILayout.Space(15);
+			GUILayout.Label("In Unused Assets List", header2Style, BRT_BuildReportWindow.LayoutNone);
+
+			// process unused assets in batches?
+
+			BuildReportTool.Options.ProcessUnusedAssetsInBatches =
+				GUILayout.Toggle(BuildReportTool.Options.ProcessUnusedAssetsInBatches, "Process unused assets in batches (Warning: report generation can become slow for large projects when turned off)", BRT_BuildReportWindow.LayoutNone);
+
+			GUILayout.Space(2);
+
+			// unused assets entries per batch
+			GUI.enabled = prevEnabled && BuildReportTool.Options.ProcessUnusedAssetsInBatches;
+			GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Label("Batch count (only process this much files at a time when checking for unused assets):", BRT_BuildReportWindow.LayoutNone);
+			string entriesPerBatchInput =
+				GUILayout.TextField(BuildReportTool.Options.UnusedAssetsEntriesPerBatch.ToString(), LayoutMinWidth100);
+			entriesPerBatchInput =
+				Regex.Replace(entriesPerBatchInput, @"[^0-9]", ""); // positive numbers only, no fractions
+			if (string.IsNullOrEmpty(entriesPerBatchInput))
+			{
+				entriesPerBatchInput = "0";
+			}
+
+			BuildReportTool.Options.UnusedAssetsEntriesPerBatch = int.Parse(entriesPerBatchInput);
+			GUILayout.FlexibleSpace();
+			GUILayout.EndHorizontal();
+
+			GUI.enabled = prevEnabled;
+			if (BuildReportTool.Options.ProcessUnusedAssetsInBatches)
+			{
+				GUILayout.BeginHorizontal(LayoutNoExpandWidth);
+				GUILayout.Space(20);
+				GUILayout.Label(
+					string.Format("Note: Due to the batch processing, only the first {0:N0} assets at most will be included for the Unused Assets List in the saved Build Report file.", BuildReportTool.Options.UnusedAssetsEntriesPerBatch),
+					boxedLabelStyle, LayoutMaxWidth593);
+				GUILayout.EndHorizontal();
+			}
+
 			GUILayout.Space(10);
-			GUILayout.Label("In Unused Assets List", BuildReportTool.Window.Settings.SUB_TITLE_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
 
 			BuildReportTool.Options.IncludeSvnInUnused =
 				GUILayout.Toggle(BuildReportTool.Options.IncludeSvnInUnused, Labels.INCLUDE_SVN_LABEL, BRT_BuildReportWindow.LayoutNone);
@@ -412,8 +474,16 @@ namespace BuildReportTool.Window.Screen
 					{
 						var element = BuildReportTool.Options.IgnorePatternsForUnused[index];
 
-						var radioLeftStyle = GUI.skin.GetStyle("RadioLeft");
-						var radioRightStyle = GUI.skin.GetStyle("RadioRight");
+						var radioLeftStyle = GUI.skin.FindStyle("RadioLeft");
+						if (radioLeftStyle == null)
+						{
+							radioLeftStyle = GUI.skin.toggle;
+						}
+						var radioRightStyle = GUI.skin.FindStyle("RadioRight");
+						if (radioRightStyle == null)
+						{
+							radioRightStyle = GUI.skin.toggle;
+						}
 
 						var basicSearchSize = radioLeftStyle.CalcSize(_basicSearchRadioLabel);
 						var regexSearchSize = radioRightStyle.CalcSize(_regexSearchRadioLabel);
@@ -428,9 +498,20 @@ namespace BuildReportTool.Window.Screen
 
 						if (element.SearchType == SavedOptions.SEARCH_METHOD_REGEX)
 						{
-							spacing += 18;
-							textFieldRect.width -= spacing;
-							EditorGUI.DrawTextureTransparent(new Rect(textFieldRect.xMax + 3, elementRect.y + 5, 16, 16), BuildReportTool.Util.IsRegexValid(element.Pattern) ? _iconValid : _iconInvalid);
+							if (_iconValid != null && _iconInvalid != null)
+							{
+								spacing += 18;
+								textFieldRect.width -= spacing;
+								EditorGUI.DrawTextureTransparent(new Rect(textFieldRect.xMax + 3, elementRect.y + 5, 16, 16),
+									BuildReportTool.Util.IsRegexValid(element.Pattern) ? _iconValid : _iconInvalid);
+							}
+							else
+							{
+								spacing += 50;
+								textFieldRect.width -= spacing;
+								GUI.Label(new Rect(textFieldRect.xMax + 3, elementRect.y + 5, 50, 16),
+									BuildReportTool.Util.IsRegexValid(element.Pattern) ? "Valid" : "Invalid");
+							}
 						}
 
 						element.Pattern = GUI.TextField(textFieldRect, element.Pattern);
@@ -468,13 +549,13 @@ namespace BuildReportTool.Window.Screen
 			GUILayout.EndVertical();
 			GUILayout.Space(1);
 			GUILayout.Label("Assets that match these search patterns will not be included in the Unused Assets list. The search will be performed on the asset's relative path, starting from the top \"Assets\" folder.",
-				BuildReportTool.Window.Settings.BOXED_LABEL_STYLE_NAME, LayoutMaxWidth848);
+				boxedLabelStyle, LayoutMaxWidth848);
 			#endregion
 
 			// -------------------------------
 
 			GUILayout.Space(15);
-			GUILayout.Label("Extra Data to include", BuildReportTool.Window.Settings.SUB_TITLE_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Label("Extra Data to include", header2Style, BRT_BuildReportWindow.LayoutNone);
 
 			BuildReportTool.Options.GetProjectSettings = GUILayout.Toggle(BuildReportTool.Options.GetProjectSettings,
 				"Get Unity project settings upon creation of a build report", BRT_BuildReportWindow.LayoutNone);
@@ -499,11 +580,21 @@ namespace BuildReportTool.Window.Screen
 				BuildReportTool.Options.CollectTextureImportSettingsOnUnusedToo,
 				"Include Unused Assets in Texture Import Settings collecting", BRT_BuildReportWindow.LayoutNone);
 
+			GUILayout.Space(10);
+
+			BuildReportTool.Options.CollectMeshData = GUILayout.Toggle(
+				BuildReportTool.Options.CollectMeshData,
+				"Collect Mesh Data upon creation of a build report", BRT_BuildReportWindow.LayoutNone);
+
+			BuildReportTool.Options.CollectMeshDataOnUnusedToo = GUILayout.Toggle(
+				BuildReportTool.Options.CollectMeshDataOnUnusedToo,
+				"Include Unused Assets in Mesh Data collecting", BRT_BuildReportWindow.LayoutNone);
+
 
 			GUILayout.Space(BuildReportTool.Window.Settings.CATEGORY_VERTICAL_SPACING);
 			// === Editor Log File ===
 
-			GUILayout.Label("Editor Log File", BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Label("Editor Log File", header1Style, BRT_BuildReportWindow.LayoutNone);
 
 			// which Editor.log is used
 			GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutNone);
@@ -556,7 +647,7 @@ namespace BuildReportTool.Window.Screen
 
 			// === Asset Lists ===
 
-			GUILayout.Label("Asset Lists", BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Label("Asset Lists", header1Style, BRT_BuildReportWindow.LayoutNone);
 
 
 			// top largest used
@@ -597,11 +688,13 @@ namespace BuildReportTool.Window.Screen
 			GUILayout.Space(20);
 			GUILayout.Label(
 				"Note: To disable the display of Top Largest Assets, use a value of 0.",
-				BuildReportTool.Window.Settings.BOXED_LABEL_STYLE_NAME, LayoutMaxWidth525);
+				boxedLabelStyle, LayoutMaxWidth525);
 			GUILayout.EndHorizontal();
 
+			// --------------------------------------------
+
 			GUILayout.Space(10);
-			GUILayout.Label("Texture Data", BuildReportTool.Window.Settings.SUB_TITLE_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Label("Texture Data", header2Style, BRT_BuildReportWindow.LayoutNone);
 
 			GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutNone);
 			GUILayout.Label("Name of File Filter where Texture Import Settings will be shown:", BRT_BuildReportWindow.LayoutNone);
@@ -867,12 +960,190 @@ namespace BuildReportTool.Window.Screen
 
 			GUILayout.EndHorizontal();
 
+			// --------------------------------------------
+
 			GUILayout.Space(10);
-			GUILayout.Label("List Pagination", BuildReportTool.Window.Settings.SUB_TITLE_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Label("Mesh Data", header2Style, BRT_BuildReportWindow.LayoutNone);
+
+			GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Label("Name of File Filter where Mesh Data will be shown:", BRT_BuildReportWindow.LayoutNone);
+			BuildReportTool.Options.FileFilterNameForMeshData =
+				GUILayout.TextField(BuildReportTool.Options.FileFilterNameForMeshData, LayoutMinWidth200);
+			GUILayout.FlexibleSpace();
+			GUILayout.EndHorizontal();
+
+			GUILayout.Space(3);
+			GUILayout.Label("Texture Import Settings To Show in Asset Lists:", BRT_BuildReportWindow.LayoutNone);
+			GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Space(10);
+
+			#region Column 1
+			GUILayout.BeginVertical(BRT_BuildReportWindow.LayoutNone);
+
+			BuildReportTool.Options.ShowMeshColumnMeshFilterCount = GUILayout.Toggle(
+				BuildReportTool.Options.ShowMeshColumnMeshFilterCount, "Non-Skinned Mesh Count", BRT_BuildReportWindow.LayoutNone);
+			if (Event.current.type == EventType.Repaint && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+			{
+				_hoveredControlTooltipText = BuildReportTool.MeshData.GetTooltipTextFromId(BuildReportTool.MeshData.DataId.MeshFilterCount);
+			}
+
+			BuildReportTool.Options.ShowMeshColumnSkinnedMeshRendererCount = GUILayout.Toggle(
+				BuildReportTool.Options.ShowMeshColumnSkinnedMeshRendererCount, "Skinned Mesh Count", BRT_BuildReportWindow.LayoutNone);
+			if (Event.current.type == EventType.Repaint && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+			{
+				_hoveredControlTooltipText = BuildReportTool.MeshData.GetTooltipTextFromId(BuildReportTool.MeshData.DataId.SkinnedMeshRendererCount);
+			}
+
+			GUILayout.EndVertical();
+			#endregion
+
+			GUILayout.Space(30);
+
+			#region Column 2
+			GUILayout.BeginVertical(BRT_BuildReportWindow.LayoutNone);
+
+			BuildReportTool.Options.ShowMeshColumnSubMeshCount = GUILayout.Toggle(
+				BuildReportTool.Options.ShowMeshColumnSubMeshCount, "Sub-mesh Count", BRT_BuildReportWindow.LayoutNone);
+			if (Event.current.type == EventType.Repaint && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+			{
+				_hoveredControlTooltipText = BuildReportTool.MeshData.GetTooltipTextFromId(BuildReportTool.MeshData.DataId.SubMeshCount);
+			}
+
+			BuildReportTool.Options.ShowMeshColumnVertexCount = GUILayout.Toggle(
+				BuildReportTool.Options.ShowMeshColumnVertexCount, "Vertex Count", BRT_BuildReportWindow.LayoutNone);
+			if (Event.current.type == EventType.Repaint && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+			{
+				_hoveredControlTooltipText = BuildReportTool.MeshData.GetTooltipTextFromId(BuildReportTool.MeshData.DataId.VertexCount);
+			}
+
+			BuildReportTool.Options.ShowMeshColumnTriangleCount = GUILayout.Toggle(
+				BuildReportTool.Options.ShowMeshColumnTriangleCount, "Face Count", BRT_BuildReportWindow.LayoutNone);
+			if (Event.current.type == EventType.Repaint && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+			{
+				_hoveredControlTooltipText = BuildReportTool.MeshData.GetTooltipTextFromId(BuildReportTool.MeshData.DataId.TriangleCount);
+			}
+
+			GUILayout.EndVertical();
+			#endregion
+
+			GUILayout.Space(30);
+
+			#region Column 3
+			GUILayout.BeginVertical(BRT_BuildReportWindow.LayoutNone);
+
+			BuildReportTool.Options.ShowMeshColumnAnimationType = GUILayout.Toggle(
+				BuildReportTool.Options.ShowMeshColumnAnimationType, "Animation Type", BRT_BuildReportWindow.LayoutNone);
+			if (Event.current.type == EventType.Repaint && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+			{
+				_hoveredControlTooltipText = BuildReportTool.MeshData.GetTooltipTextFromId(BuildReportTool.MeshData.DataId.AnimationType);
+			}
+
+			BuildReportTool.Options.ShowMeshColumnAnimationClipCount = GUILayout.Toggle(
+				BuildReportTool.Options.ShowMeshColumnAnimationClipCount, "Animation Clip Count", BRT_BuildReportWindow.LayoutNone);
+			if (Event.current.type == EventType.Repaint && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+			{
+				_hoveredControlTooltipText = BuildReportTool.MeshData.GetTooltipTextFromId(BuildReportTool.MeshData.DataId.AnimationClipCount);
+			}
+
+			GUILayout.EndVertical();
+			#endregion
+
+			GUILayout.FlexibleSpace();
+
+			GUILayout.EndHorizontal();
+
+			// --------------------------------------------
+
+			GUILayout.Space(10);
+			GUILayout.Label("Prefab Data", header2Style, BRT_BuildReportWindow.LayoutNone);
+
+			GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Label("Name of File Filter where Prefab Data will be shown:", BRT_BuildReportWindow.LayoutNone);
+			BuildReportTool.Options.FileFilterNameForPrefabData =
+				GUILayout.TextField(BuildReportTool.Options.FileFilterNameForPrefabData, LayoutMinWidth200);
+			GUILayout.FlexibleSpace();
+			GUILayout.EndHorizontal();
+
+			GUILayout.Space(3);
+			GUILayout.Label("Prefab Data To Show in Asset Lists:", BRT_BuildReportWindow.LayoutNone);
+			GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Space(10);
+
+			#region Column 1
+			GUILayout.BeginVertical(BRT_BuildReportWindow.LayoutNone);
+
+			BuildReportTool.Options.ShowPrefabColumnContributeGI = GUILayout.Toggle(
+				BuildReportTool.Options.ShowPrefabColumnContributeGI, "Contribute Global Illumination", BRT_BuildReportWindow.LayoutNone);
+			if (Event.current.type == EventType.Repaint && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+			{
+				_hoveredControlTooltipText = BuildReportTool.PrefabData.GetTooltipTextFromId(BuildReportTool.PrefabData.DataId.ContributeGI);
+			}
+
+			BuildReportTool.Options.ShowPrefabColumnBatchingStatic = GUILayout.Toggle(
+				BuildReportTool.Options.ShowPrefabColumnBatchingStatic, "Static Batching", BRT_BuildReportWindow.LayoutNone);
+			if (Event.current.type == EventType.Repaint && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+			{
+				_hoveredControlTooltipText = BuildReportTool.PrefabData.GetTooltipTextFromId(BuildReportTool.PrefabData.DataId.BatchingStatic);
+			}
+
+			BuildReportTool.Options.ShowPrefabColumnReflectionProbeStatic = GUILayout.Toggle(
+				BuildReportTool.Options.ShowPrefabColumnReflectionProbeStatic, "Reflection Probe Static", BRT_BuildReportWindow.LayoutNone);
+			if (Event.current.type == EventType.Repaint && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+			{
+				_hoveredControlTooltipText = BuildReportTool.PrefabData.GetTooltipTextFromId(BuildReportTool.PrefabData.DataId.ReflectionProbeStatic);
+			}
+
+			GUILayout.EndVertical();
+			#endregion
+
+			GUILayout.Space(30);
+
+			#region Column 2
+			GUILayout.BeginVertical(BRT_BuildReportWindow.LayoutNone);
+
+			BuildReportTool.Options.ShowPrefabColumnOccluderStatic = GUILayout.Toggle(
+				BuildReportTool.Options.ShowPrefabColumnOccluderStatic, "Occluder Static", BRT_BuildReportWindow.LayoutNone);
+			if (Event.current.type == EventType.Repaint && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+			{
+				_hoveredControlTooltipText = BuildReportTool.PrefabData.GetTooltipTextFromId(BuildReportTool.PrefabData.DataId.OccluderStatic);
+			}
+
+			BuildReportTool.Options.ShowPrefabColumnOccludeeStatic = GUILayout.Toggle(
+				BuildReportTool.Options.ShowPrefabColumnOccludeeStatic, "Occludee Static", BRT_BuildReportWindow.LayoutNone);
+			if (Event.current.type == EventType.Repaint && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+			{
+				_hoveredControlTooltipText = BuildReportTool.PrefabData.GetTooltipTextFromId(BuildReportTool.PrefabData.DataId.OccludeeStatic);
+			}
+
+			BuildReportTool.Options.ShowPrefabColumnNavigationStatic = GUILayout.Toggle(
+				BuildReportTool.Options.ShowPrefabColumnNavigationStatic, "Navigation Static", BRT_BuildReportWindow.LayoutNone);
+			if (Event.current.type == EventType.Repaint && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+			{
+				_hoveredControlTooltipText = BuildReportTool.PrefabData.GetTooltipTextFromId(BuildReportTool.PrefabData.DataId.NavigationStatic);
+			}
+
+			BuildReportTool.Options.ShowPrefabColumnOffMeshLinkGeneration = GUILayout.Toggle(
+				BuildReportTool.Options.ShowPrefabColumnOffMeshLinkGeneration, "Off-Mesh Link Generation", BRT_BuildReportWindow.LayoutNone);
+			if (Event.current.type == EventType.Repaint && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+			{
+				_hoveredControlTooltipText = BuildReportTool.PrefabData.GetTooltipTextFromId(BuildReportTool.PrefabData.DataId.OffMeshLinkGeneration);
+			}
+
+			GUILayout.EndVertical();
+			#endregion
+
+			GUILayout.FlexibleSpace();
+
+			GUILayout.EndHorizontal();
+
+			// --------------------------------------------
+
+			GUILayout.Space(10);
+			GUILayout.Label("List Pagination", header2Style, BRT_BuildReportWindow.LayoutNone);
 
 			// pagination length
 			GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutNone);
-			GUILayout.Label("View assets per groups of:", BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Label("Asset List entries per page:", BRT_BuildReportWindow.LayoutNone);
 			string pageInput = GUILayout.TextField(BuildReportTool.Options.AssetListPaginationLength.ToString(), LayoutMinWidth100);
 			pageInput = Regex.Replace(pageInput, @"[^0-9]", ""); // positive numbers only, no fractions
 			if (string.IsNullOrEmpty(pageInput))
@@ -884,25 +1155,7 @@ namespace BuildReportTool.Window.Screen
 			GUILayout.FlexibleSpace();
 			GUILayout.EndHorizontal();
 
-			GUILayout.Space(10);
-
-			// unused assets entries per batch
-			GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutNone);
-			GUILayout.Label("Process unused assets per batches of:", BRT_BuildReportWindow.LayoutNone);
-			string entriesPerBatchInput =
-				GUILayout.TextField(BuildReportTool.Options.UnusedAssetsEntriesPerBatch.ToString(), LayoutMinWidth100);
-			entriesPerBatchInput =
-				Regex.Replace(entriesPerBatchInput, @"[^0-9]", ""); // positive numbers only, no fractions
-			if (string.IsNullOrEmpty(entriesPerBatchInput))
-			{
-				entriesPerBatchInput = "0";
-			}
-
-			BuildReportTool.Options.UnusedAssetsEntriesPerBatch = int.Parse(entriesPerBatchInput);
-			GUILayout.FlexibleSpace();
-			GUILayout.EndHorizontal();
-
-			GUILayout.Space(10);
+			GUILayout.Space(2);
 
 			// log messages
 			GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutNone);
@@ -922,7 +1175,7 @@ namespace BuildReportTool.Window.Screen
 
 			GUILayout.Space(10);
 
-			GUILayout.Label("Asset Search", BuildReportTool.Window.Settings.SUB_TITLE_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Label("Asset Search", header2Style, BRT_BuildReportWindow.LayoutNone);
 
 
 			GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutNone);
@@ -945,7 +1198,7 @@ namespace BuildReportTool.Window.Screen
 			GUI.enabled = prevEnabled;
 
 			GUILayout.Space(10);
-			GUILayout.Label("File Filters", BuildReportTool.Window.Settings.SUB_TITLE_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Label("File Filters", header2Style, BRT_BuildReportWindow.LayoutNone);
 
 			// choose which file filter group to use
 			GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutNone);
@@ -968,7 +1221,7 @@ namespace BuildReportTool.Window.Screen
 			GUILayout.EndHorizontal();
 
 			GUILayout.Space(10);
-			GUILayout.Label("Asset Pinging", BuildReportTool.Window.Settings.SUB_TITLE_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Label("Asset Pinging", header2Style, BRT_BuildReportWindow.LayoutNone);
 
 
 			GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutNone);
@@ -988,14 +1241,14 @@ namespace BuildReportTool.Window.Screen
 				BuildReportTool.Options.DoubleClickOnAssetWillPing
 					? "Note: To ping multiple assets, select the assets, and hold Alt while double-clicking one of them."
 					: "Note: To ping multiple assets, select the assets, and hold Alt while pressing one of their Ping buttons.",
-				BuildReportTool.Window.Settings.BOXED_LABEL_STYLE_NAME, LayoutMaxWidth593);
+				boxedLabelStyle, LayoutMaxWidth593);
 
 			GUILayout.EndHorizontal();
 
 			GUILayout.Space(10);
 
 			//AssetUsageLabelTypeLabels
-			GUILayout.Label("Asset Usages/Dependencies", BuildReportTool.Window.Settings.SUB_TITLE_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Label("Asset Usages/Dependencies", header2Style, BRT_BuildReportWindow.LayoutNone);
 
 			GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutNone);
 			GUILayout.Label("Asset usage labels:", BRT_BuildReportWindow.LayoutNone);
@@ -1014,11 +1267,11 @@ namespace BuildReportTool.Window.Screen
 			GUILayout.Space(20);
 			GUILayout.Label(
 				"Note: \"End users\" are the scenes (or Resources assets) that use a given asset (directly or indirectly), they are the main reason why that asset got included in the build.",
-				BuildReportTool.Window.Settings.BOXED_LABEL_STYLE_NAME, LayoutMaxWidth525);
+				boxedLabelStyle, LayoutMaxWidth525);
 			GUILayout.EndHorizontal();
 
 			GUILayout.Space(10);
-			GUILayout.Label("Thumbnails", BuildReportTool.Window.Settings.SUB_TITLE_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Label("Thumbnails", header2Style, BRT_BuildReportWindow.LayoutNone);
 
 			BuildReportTool.Options.ShowTooltipThumbnail = GUILayout.Toggle(
 				BuildReportTool.Options.ShowTooltipThumbnail,
@@ -1102,7 +1355,7 @@ namespace BuildReportTool.Window.Screen
 			GUILayout.Space(20);
 			GUILayout.Label(
 				"Note: Hold Ctrl while a thumbnail tooltip is shown to zoom-in.",
-				BuildReportTool.Window.Settings.BOXED_LABEL_STYLE_NAME, LayoutMaxWidth525);
+				boxedLabelStyle, LayoutMaxWidth525);
 			GUILayout.EndHorizontal();
 
 
@@ -1111,7 +1364,7 @@ namespace BuildReportTool.Window.Screen
 
 			// === Build Report Files ===
 
-			GUILayout.Label("Build Report Files", BuildReportTool.Window.Settings.INFO_TITLE_STYLE_NAME, BRT_BuildReportWindow.LayoutNone);
+			GUILayout.Label("Build Report Files", header1Style, BRT_BuildReportWindow.LayoutNone);
 
 			// build report files save path
 			GUILayout.BeginHorizontal(BRT_BuildReportWindow.LayoutNone);
@@ -1170,7 +1423,11 @@ namespace BuildReportTool.Window.Screen
 			if (Event.current.type == EventType.Repaint && !string.IsNullOrEmpty(_hoveredControlTooltipText))
 			{
 				_tooltipLabel.text = _hoveredControlTooltipText;
-				var tooltipTextStyle = GUI.skin.GetStyle("TooltipText");
+				var tooltipTextStyle = GUI.skin.FindStyle("TooltipText");
+				if (tooltipTextStyle == null)
+				{
+					tooltipTextStyle = GUI.skin.label;
+				}
 
 				const int MAX_TOOLTIP_WIDTH = 240;
 				var tooltipSize = tooltipTextStyle.CalcSize(_tooltipLabel);

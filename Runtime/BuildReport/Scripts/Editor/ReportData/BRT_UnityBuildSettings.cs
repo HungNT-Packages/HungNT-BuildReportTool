@@ -3,521 +3,1180 @@ using System.Collections.Generic;
 namespace BuildReportTool
 {
 	[System.Serializable]
-	public class UnityBuildSettings
+	public partial class UnityBuildSettings
 	{
-		public string CompanyName; // PlayerSettings.companyName
-		public string ProductName; // PlayerSettings.productName
-
-		public bool UsingAdvancedLicense; // PlayerSettings.advancedLicense / Application.HasProLicense() ?
-
-
-		// debug settings
+		// Project Settings
 		// ---------------------------------------------------------------
 
-		public bool EnableDevelopmentBuild; // EditorUserBuildSettings.development / Debug.isDebugBuild
-		public bool EnableDebugLog; // PlayerSettings.usePlayerLog
-		public bool EnableSourceDebugging; // EditorUserBuildSettings.allowDebugging
-		public bool EnableExplicitNullChecks; // EditorUserBuildSettings.explicitNullChecks
-		public bool EnableExplicitDivideByZeroChecks; // Unity 5.4: EditorUserBuildSettings.explicitDivideByZeroChecks
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.companyName"/>
+		/// </summary>
+		public string CompanyName;
 
-		public bool EnableCrashReportApi; // PlayerSettings.enableCrashReportAPI
-		public bool EnableInternalProfiler; // PlayerSettings.enableInternalProfiler
-		public bool ConnectProfiler; // EditorUserBuildSettings.connectProfiler
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.productName"/>
+		/// </summary>
+		public string ProductName;
 
-		public string ActionOnDotNetUnhandledException; // Unity 5: PlayerSettings.actionOnDotNetUnhandledException
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.advancedLicense"/>
+		/// Can also be obtained using <see cref="UnityEngine.Application.HasProLicense"/>
+		/// </summary>
+		public bool UsingAdvancedLicense;
 
-		public bool ForceOptimizeScriptCompilation; // Unity 5.2.2: EditorUserBuildSettings.forceOptimizeScriptCompilation
-
-		public string StackTraceForError; // PlayerSettings.GetStackTraceLogType(LogType.Error)
-		public string StackTraceForAssert; // PlayerSettings.GetStackTraceLogType(LogType.Assert)
-		public string StackTraceForWarning; // PlayerSettings.GetStackTraceLogType(LogType.Warning)
-		public string StackTraceForLog; // PlayerSettings.GetStackTraceLogType(LogType.Log)
-		public string StackTraceForException; // PlayerSettings.GetStackTraceLogType(LogType.Exception)
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.applicationIdentifier"/>
+		/// </summary>
+		public string ApplicationIdentifier;
 
 
-		// build settings
+		// Debug Settings
 		// ---------------------------------------------------------------
 
-		public bool EnableHeadlessMode; // EditorUserBuildSettings.enableHeadlessMode
-		public bool InstallInBuildFolder; // EditorUserBuildSettings.installInBuildFolder
-		public bool ForceInstallation; // EditorUserBuildSettings.forceInstallation
-		public bool BuildScriptsOnly; // EditorUserBuildSettings.buildScriptsOnly
-		public bool StripPhysicsCode; // in Unity 4: PlayerSettings.stripPhysics. Removed in Unity 5
-		public bool BakeCollisionMeshes; // Unity 5: PlayerSettings.bakeCollisionMeshes
-		public bool StripUnusedMeshComponents; // PlayerSettings.stripUnusedMeshComponents
-		public bool StripEngineCode; // PlayerSettings.stripEngineCode
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.development"/>
+		/// Can also be obtained using <see cref="UnityEngine.Debug.isDebugBuild"/>
+		/// </summary>
+		public bool EnableDevelopmentBuild;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.usePlayerLog"/>
+		/// </summary>
+		public bool EnableDebugLog;
+
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.allowDebugging"/>
+		/// </summary>
+		public bool EnableSourceDebugging;
+
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.waitForManagedDebugger"/>
+		/// Added in Unity 2019.3
+		/// </summary>
+		public bool WaitForManagedDebugger;
+
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.explicitNullChecks"/>
+		/// </summary>
+		public bool EnableExplicitNullChecks;
+
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.explicitDivideByZeroChecks"/>
+		/// Added in Unity 5.4
+		/// </summary>
+		public bool EnableExplicitDivideByZeroChecks;
+
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.explicitArrayBoundsChecks"/>
+		/// Added in Unity 2018.1
+		/// </summary>
+		public bool EnableArrayBoundsChecks;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.enableCrashReportAPI"/>
+		/// </summary>
+		public bool EnableCrashReportApi;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.enableInternalProfiler"/>
+		/// </summary>
+		public bool EnableInternalProfiler;
+
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.connectProfiler"/>
+		/// </summary>
+		public bool ConnectProfiler;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.actionOnDotNetUnhandledException"/>
+		/// Added in Unity 5
+		/// </summary>
+		public string ActionOnDotNetUnhandledException;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.GetStackTraceLogType"/> using <see cref="UnityEngine.LogType.Error"/>
+		/// </summary>
+		public string StackTraceForError;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.GetStackTraceLogType"/> using <see cref="UnityEngine.LogType.Assert"/>
+		/// </summary>
+		public string StackTraceForAssert;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.GetStackTraceLogType"/> using <see cref="UnityEngine.LogType.Warning"/>
+		/// </summary>
+		public string StackTraceForWarning;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.GetStackTraceLogType"/> using <see cref="UnityEngine.LogType.Log"/>
+		/// </summary>
+		public string StackTraceForLog;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.GetStackTraceLogType"/> using <see cref="UnityEngine.LogType.Exception"/>
+		/// </summary>
+		public string StackTraceForException;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.enableFrameTimingStats"/>
+		/// Added in Unity 2018.3
+		/// </summary>
+		public bool FrameTimingStats;
 
 
-		// code settings
+		// Build Settings
 		// ---------------------------------------------------------------
 
-		public string[] CompileDefines; // EditorUserBuildSettings.activeScriptCompilationDefines
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.enableHeadlessMode"/>
+		/// </summary>
+		public bool EnableHeadlessMode;
 
-		public string StrippingLevelUsed; // PlayerSettings.strippingLevel
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.installInBuildFolder"/>
+		/// </summary>
+		public bool InstallInBuildFolder;
 
-		public string NETApiCompatibilityLevel; // PlayerSettings.apiCompatibilityLevel
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.forceInstallation"/>
+		/// </summary>
+		public bool ForceInstallation;
 
-		public string AOTOptions; // PlayerSettings.aotOptions
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.bakeCollisionMeshes"/>
+		/// Added in Unity 5.
+		/// </summary>
+		public bool BakeCollisionMeshes;
 
-		public string LocationUsageDescription; // PlayerSettings.locationUsageDescription
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.stripUnusedMeshComponents"/>
+		/// </summary>
+		public bool StripUnusedMeshComponents;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.stripEngineCode"/>
+		/// </summary>
+		public bool StripEngineCode;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.mipStripping"/>
+		/// Added in Unity 2020.1
+		/// </summary>
+		public bool StripUnusedMips;
 
 
-		// rendering settings
+		// Code Settings
 		// ---------------------------------------------------------------
 
-		public string ColorSpaceUsed; // PlayerSettings.colorSpace
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.GetScriptingBackend(UnityEditor.Build.NamedBuildTarget)"/>
+		/// Added in Unity 2017.1
+		/// </summary>
+		public string ScriptingBackend;
 
-		public bool UseMultithreadedRendering; // PlayerSettings.MTRendering
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.GetAdditionalCompilerArguments"/>
+		/// Added in Unity 2021.2
+		/// </summary>
+		public string[] AdditionalCompilerArguments;
 
-		// in Unity 3: only xbox 360 has this with PlayerSettings.xboxSkinOnGPU
-		// in Unity 4, this is PlayerSettings.gpuSkinning
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.GetAdditionalIl2CppArgs"/>
+		/// Added in Unity 2017.1
+		/// </summary>
+		public string AdditionalIL2CPPArguments;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.GetIl2CppCodeGeneration"/>
+		/// Added in Unity 2022.1
+		/// </summary>
+		public string IL2CPPCodeGeneration;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.GetIl2CppCompilerConfiguration(UnityEditor.Build.NamedBuildTarget)"/>
+		/// Added in Unity 2018.1
+		/// </summary>
+		public string IL2CPPCompilerConfig;
+
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.activeScriptCompilationDefines"/>
+		/// </summary>
+		public string[] CompileDefines;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.strippingLevel"/>
+		/// </summary>
+		public string StrippingLevelUsed;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.GetApiCompatibilityLevel(UnityEditor.Build.NamedBuildTarget)"/>
+		/// </summary>
+		public string NETApiCompatibilityLevel;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.allowUnsafeCode"/>
+		/// Added in Unity 2018.1
+		/// </summary>
+		public bool AllowUnsafeCode;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.suppressCommonWarnings"/>
+		/// Added in Unity 2019.4
+		/// </summary>
+		public bool SuppressCommonWarnings;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.gcIncremental"/>
+		/// Added in Unity 2019.1
+		/// </summary>
+		public bool IncrementalGC;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.aotOptions"/>
+		/// </summary>
+		public string AOTOptions;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.locationUsageDescription"/>
+		/// </summary>
+		public string LocationUsageDescription;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.insecureHttpOption"/>
+		/// Added in Unity 2022.1
+		/// </summary>
+		public string InsecureHttpOption;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.assemblyVersionValidation"/>
+		/// Added in Unity 2019.4
+		/// Marked as obsolete in Unity 2022.2
+		/// </summary>
+		public bool AssemblyVersionValidation;
+
+
+		// Rendering Settings
+		// ---------------------------------------------------------------
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.use32BitDisplayBuffer"/>
+		/// </summary>
+		public bool Use32BitDisplayBuffer;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.useHDRDisplay"/>
+		/// Added in Unity 5.6
+		/// </summary>
+		public bool UseHDRDisplay;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.allowHDRDisplaySupport"/>
+		/// Added in Unity 2022.3
+		/// </summary>
+		public bool AllowHDRDisplaySupport;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.hdrBitDepth"/>
+		/// Added in Unity 2022.2
+		/// </summary>
+		public string HdrBitDepth;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.colorSpace"/>
+		/// </summary>
+		public string ColorSpaceUsed;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.MTRendering"/>
+		/// </summary>
+		public bool UseMultithreadedRendering;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.GetVirtualTexturingSupportEnabled"/>
+		/// Added in Unity 2020.1
+		/// </summary>
+		public bool VirtualTexturingSupportEnabled;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.GetNormalMapEncoding(UnityEditor.Build.NamedBuildTarget)"/>
+		/// Added in Unity 2020.2
+		/// </summary>
+		public string NormalMapEncoding;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.GetShaderChunkCountForPlatform"/>
+		/// Added in Unity 2021.3.12
+		/// </summary>
+		public int ShaderChunkCountForPlatform;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.GetShaderChunkSizeInMBForPlatform"/>
+		/// Added in Unity 2021.3.12
+		/// </summary>
+		public int ShaderChunkSizeInMBForPlatform;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.GetShaderPrecisionModel"/>
+		/// Added in Unity 2020.2
+		/// </summary>
+		public string ShaderPrecisionModel;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.strictShaderVariantMatching"/>
+		/// Added in Unity 2022.1
+		/// </summary>
+		public bool StrictShaderVariantMatching;
+
+		/// <summary>
+		/// In Unity 4 onwards, this is <see cref="UnityEditor.PlayerSettings.gpuSkinning"/>.
+		/// In Unity 3, only xbox 360 has this with UnityEditor.PlayerSettings.xboxSkinOnGPU.
+		/// </summary>
 		public bool UseGPUSkinning;
 
-		public bool UseGraphicsJobs; // PlayerSettings.graphicsJobs
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.graphicsJobs"/>
+		/// </summary>
+		public bool UseGraphicsJobs;
 
-		public string GraphicsJobsType; // PlayerSettings.graphicsJobMode
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.graphicsJobMode"/>
+		/// </summary>
+		public string GraphicsJobsType;
 
-		public string RenderingPathUsed; // Unity 4: PlayerSettings.renderingPath
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.renderingPath"/>
+		/// Added in Unity 4
+		/// </summary>
+		public string RenderingPathUsed;
 
-		public bool VisibleInBackground; // PlayerSettings.visibleInBackground
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.visibleInBackground"/>
+		/// </summary>
+		public bool VisibleInBackground;
 
-		public string[] AspectRatiosAllowed; // PlayerSettings.HasAspectRatio
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.HasAspectRatio"/>
+		/// </summary>
+		public string[] AspectRatiosAllowed;
 
-		public string[] GraphicsAPIsUsed; // Unity 5.3: PlayerSettings.GetGraphicsAPIs
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.GetGraphicsAPIs"/>
+		/// Added in Unity 5.3
+		/// </summary>
+		public string[] GraphicsAPIsUsed;
 
-		public bool EnableVirtualRealitySupport; // PlayerSettings.virtualRealitySupported
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.virtualRealitySupported"/>
+		/// </summary>
+		public bool EnableVirtualRealitySupport;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.stereoRenderingPath"/>
+		/// Added in Unity 5.5
+		/// </summary>
+		public string StereoRenderingPath;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.spriteBatchVertexThreshold"/>
+		/// Added in Unity 2022.1
+		/// </summary>
+		public int SpriteBatchVertexThreshold;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.enable360StereoCapture"/>
+		/// Added in Unity 2018.1
+		/// </summary>
+		public bool Enable360StereoCapture;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.legacyClampBlendShapeWeights"/>
+		/// Added in Unity 2018.3
+		/// </summary>
+		public bool LegacyClampBlendShapeWeights;
+
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.overrideMaxTextureSize"/>
+		/// Added in Unity 2021.2
+		/// </summary>
+		public int OverrideMaxTextureSize;
+
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.overrideTextureCompression"/>
+		/// Added in Unity 2021.2
+		/// </summary>
+		public string OverrideTextureCompression;
 
 
-		// web player settings
+		// Vulkan Settings
 		// ---------------------------------------------------------------
 
-		public int WebPlayerDefaultScreenWidth; // PlayerSettings.defaultWebScreenWidth
-		public int WebPlayerDefaultScreenHeight; // PlayerSettings.defaultWebScreenHeight
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.vulkanEnableSetSRGBWrite"/>
+		/// Added in Unity 2018.2
+		/// </summary>
+		public bool VulkanEnableSetSRGBWrite;
 
-		public bool WebPlayerEnableStreaming; // EditorUserBuildSettings.webPlayerStreamed
-		public bool WebPlayerDeployOffline; // EditorUserBuildSettings.webPlayerOfflineDeployment
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.vulkanNumSwapchainBuffers"/>
+		/// Added in Unity 2019.3
+		/// </summary>
+		public uint vulkanNumSwapchainBuffers;
 
-		public int
-			WebPlayerFirstStreamedLevelWithResources; // PlayerSettings.firstStreamedLevelWithResources. Removed in Unity 5.3
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.vulkanEnableLateAcquireNextImage"/>
+		/// Added in Unity 2019.4
+		/// </summary>
+		public bool VulkanEnableLateAcquireNextImage;
 
-
-		// WebGL settings
-		// ---------------------------------------------------------------
-		public string WebGLOptimizationLevel; // EditorUserBuildSettings.webGLOptimizationLevel
-
-		public bool WebGLUsePreBuiltUnityEngine; // EditorUserBuildSettings.webGLUsePreBuiltUnityEngine
-
-		public string WebGLCompressionFormat; // PlayerSettings.WebGL.compressionFormat
-
-		public bool WebGLAutoCacheAssetsData; // PlayerSettings.WebGL.dataCaching
-
-		public bool WebGLCreateDebugSymbolsFile; // PlayerSettings.WebGL.debugSymbols
-
-		public string WebGLExceptionSupportType; // PlayerSettings.WebGL.exceptionSupport
-
-		public int WebGLMemorySize; // PlayerSettings.WebGL.memorySize
-
-		public string WebGLTemplatePath; // PlayerSettings.WebGL.template
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.vulkanEnablePreTransform"/>
+		/// Only for Android
+		/// Added in Unity 2020.2
+		/// </summary>
+		public bool VulkanEnablePreTransform;
 
 
-		// flash player settings
-		// ---------------------------------------------------------------
-		// Unity 5: Flash support is dropped
-
-		//public string FlashBuildSubtarget; // EditorUserBuildSettings.flashBuildSubtarget
-
-
-		// shared by web and desktop
-		// ---------------------------------------------------------------
-		public bool RunInBackground; // PlayerSettings.runInBackground
-
-
-		// desktop (windows/mac/linux) build settings
+		// WebGL Settings
 		// ---------------------------------------------------------------
 
-		public string StandaloneResolutionDialogSettingUsed; // PlayerSettings.displayResolutionDialog
-		public string StandaloneFullScreenModeUsed; // PlayerSettings.fullScreenMode. Unity 2018.1
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.WebGL.compressionFormat"/>
+		/// Added in Unity 5.5
+		/// </summary>
+		public string WebGLCompressionFormat;
 
-		public int StandaloneDefaultScreenWidth; // PlayerSettings.defaultScreenWidth
-		public int StandaloneDefaultScreenHeight; // PlayerSettings.defaultScreenHeight
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.WebGL.dataCaching"/>
+		/// Added in Unity 5.5
+		/// </summary>
+		public bool WebGLAutoCacheAssetsData;
 
-		public bool
-			StandaloneFullScreenByDefault; // PlayerSettings.defaultIsFullScreen. Removed in Unity 2018 in favor of PlayerSettings.fullScreenMode
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.WebGL.debugSymbols"/>
+		/// Added in Unity 2021.2
+		/// </summary>
+		public bool WebGLCreateDebugSymbolsFile;
 
-		public bool StandaloneAllowFullScreenSwitch; // PlayerSettings.allowFullscreenSwitch. Unity 5.3
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.WebGL.debugSymbolMode"/>
+		/// Added in Unity 2021.2
+		/// </summary>
+		public string WebGLDebugSymbolMode;
 
-		public bool StandaloneCaptureSingleScreen; // PlayerSettings.captureSingleScreen
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.WebGL.exceptionSupport"/>
+		/// Added in Unity 5.5
+		/// </summary>
+		public string WebGLExceptionSupportType;
 
-		public bool StandaloneForceSingleInstance; // Unity 4: PlayerSettings.forceSingleInstance
-		public bool StandaloneEnableResizableWindow; // Unity 4: PlayerSettings.resizableWindow
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.WebGL.memorySize"/>
+		/// Added in Unity 5.5
+		/// </summary>
+		public int WebGLMemorySize;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.WebGL.template"/>
+		/// Added in Unity 5.5
+		/// </summary>
+		public string WebGLTemplatePath;
 
 
-		public bool
-			StandaloneUseStereoscopic3d; // PlayerSettings.stereoscopic3D. Removed in Unity 2017 in favor of VREditor.GetStereoDeviceEnabled
-
-
-		// windows only build settings
+		// Settings shared by Web and Desktop
 		// ---------------------------------------------------------------
 
-		public bool
-			WinUseDirect3D11IfAvailable; // Unity 4: PlayerSettings.useDirect3D11. Removed in Unity 5.3 in favor of PlayerSettings.GetGraphicsAPIs
-
-		public string
-			WinDirect3D9FullscreenModeUsed; // PlayerSettings.d3d9FullscreenMode. Removed in Unity 2017. in 2018 use PlayerSettings.fullScreenMode
-
-		public string
-			WinDirect3D11FullscreenModeUsed; // PlayerSettings.d3d11FullscreenMode. Removed in Unity 2018 in favor of PlayerSettings.fullScreenMode
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.runInBackground"/>
+		/// </summary>
+		public bool RunInBackground;
 
 
-		// mac only build settings
+		// Desktop (Windows/Mac/Linux) Build Settings
 		// ---------------------------------------------------------------
 
-		public bool MacUseAppStoreValidation; // PlayerSettings.useMacAppStoreValidation
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.displayResolutionDialog"/>
+		/// </summary>
+		public string StandaloneResolutionDialogSettingUsed;
 
-		public string
-			MacFullscreenModeUsed; // PlayerSettings.macFullscreenMode. Removed in Unity 2018 in favor of PlayerSettings.fullScreenMode
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.fullScreenMode"/>
+		/// Added in Unity 2018.1
+		/// </summary>
+		public string StandaloneFullScreenModeUsed;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.defaultScreenWidth"/>
+		/// </summary>
+		public int StandaloneDefaultScreenWidth;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.defaultScreenHeight"/>
+		/// </summary>
+		public int StandaloneDefaultScreenHeight;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.defaultIsFullScreen"/>
+		/// Removed in Unity 2018 in favor of <see cref="UnityEditor.PlayerSettings.fullScreenMode"/>
+		/// </summary>
+		public bool StandaloneFullScreenByDefault;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.allowFullscreenSwitch"/>
+		/// Added in Unity 5.3
+		/// </summary>
+		public bool StandaloneAllowFullScreenSwitch;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.captureSingleScreen"/>
+		/// </summary>
+		public bool StandaloneCaptureSingleScreen;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.forceSingleInstance"/>
+		/// Added in Unity 4
+		/// </summary>
+		public bool StandaloneForceSingleInstance;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.resizableWindow"/>
+		/// Added in Unity 4
+		/// </summary>
+		public bool StandaloneEnableResizableWindow;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.stereoscopic3D"/>
+		/// Marked as obsolete in Unity 5.4
+		/// </summary>
+		public bool StandaloneUseStereoscopic3d;
 
 
-		// Windows Store App only build settings
+		// Windows-only Build Settings
 		// ---------------------------------------------------------------
 
-		public bool WSAGenerateReferenceProjects; // EditorUserBuildSettings.metroGenerateReferenceProjects
+		/// <summary>
+		/// <see cref="UnityEditor.WindowsStandalone.UserBuildSettings.copyPDBFiles"/>
+		/// </summary>
+		public bool WinIncludeNativePdbFilesInBuild;
 
-		public string WSASDK; // EditorUserBuildSettings.wsaSDK
+		/// <summary>
+		/// <see cref="UnityEditor.WindowsStandalone.UserBuildSettings.createSolution"/>
+		/// </summary>
+		public bool WinCreateVisualStudioSolution;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.useDirect3D11"/>
+		/// Added in Unity 4.
+		/// Marked as obsolete in Unity 5.2 in favor of <see cref="UnityEditor.PlayerSettings.GetGraphicsAPIs"/>
+		/// </summary>
+		public bool WinUseDirect3D11IfAvailable;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.d3d9FullscreenMode"/>
+		/// Marked as obsolete in Unity 2017.
+		/// In 2018 use <see cref="UnityEditor.PlayerSettings.fullScreenMode"/> (stored in <see cref="StandaloneFullScreenModeUsed"/>)
+		/// </summary>
+		public string WinDirect3D9FullscreenModeUsed;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.d3d11FullscreenMode"/>
+		/// Marked as obsolete in Unity 2018.
+		/// Use <see cref="UnityEditor.PlayerSettings.fullScreenMode"/> (stored in <see cref="StandaloneFullScreenModeUsed"/>)
+		/// </summary>
+		public string WinDirect3D11FullscreenModeUsed;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.useFlipModelSwapchain"/>
+		/// Added in Unity 2019.1
+		/// </summary>
+		public bool WinUseFlipModelSwapchain;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.windowsGamepadBackendHint"/>
+		/// Added in Unity 2021.3.13
+		/// </summary>
+		public string WinGamepadInputHint;
 
 
-		// Mobile build settings
+		// Mac OS X-only Build Settings
 		// ---------------------------------------------------------------
 
-		public string
-			MobileBundleIdentifier; // PlayerSettings.bundleIdentifier ("Bundle Identifier" in iOS, "Package Identifier" in Android)
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.macRetinaSupport"/>
+		/// Added in Unity 2017.2
+		/// </summary>
+		public bool MacRetinaSupport;
 
-		public string
-			MobileBundleVersion; // PlayerSettings.bundleVersion ("Bundle Version" in iOS, "Version Name" in Android)
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.useMacAppStoreValidation"/>
+		/// </summary>
+		public bool MacUseAppStoreValidation;
 
-		public bool MobileHideStatusBar; // PlayerSettings.statusBarHidden
-
-		public int MobileAccelerometerFrequency; // PlayerSettings.accelerometerFrequency
-
-		public string MobileDefaultOrientationUsed; // PlayerSettings.defaultInterfaceOrientation
-		public bool MobileEnableAutorotateToPortrait; // PlayerSettings.allowedAutorotateToPortrait
-		public bool MobileEnableAutorotateToReversePortrait; // PlayerSettings.allowedAutorotateToPortraitUpsideDown
-		public bool MobileEnableAutorotateToLandscapeLeft; // PlayerSettings.allowedAutorotateToLandscapeLeft
-		public bool MobileEnableAutorotateToLandscapeRight; // PlayerSettings.allowedAutorotateToLandscapeRight
-		public bool MobileEnableOSAutorotation; // PlayerSettings.useOSAutorotation
-
-		public bool Use32BitDisplayBuffer; // PlayerSettings.use32BitDisplayBuffer
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.macOSXcodeBuildConfig"/>
+		/// Added in Unity 2021.2
+		/// </summary>
+		public string MacXcodeBuildConfig;
 
 
-		// iOS only build settings
+		// Mobile Build Settings
 		// ---------------------------------------------------------------
 
-		// Unity 5: EditorUserBuildSettings.appendProject is removed
-		public bool iOSAppendedToProject; // EditorUserBuildSettings.appendProject
-		public bool iOSSymlinkLibraries; // EditorUserBuildSettings.symlinkLibraries
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.bundleIdentifier"/>
+		/// "Bundle Identifier" in iOS and Mac, "Package Identifier" in Android
+		/// </summary>
+		public string MobileBundleIdentifier;
 
-		public string iOSAppDisplayName; // PlayerSettings.iOS.applicationDisplayName
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.bundleVersion"/>
+		/// "Bundle Version" in iOS, "Version Name" in Android
+		/// </summary>
+		public string MobileBundleVersion;
 
-		public string iOSScriptCallOptimizationUsed; // PlayerSettings.iOS.scriptCallOptimization
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.statusBarHidden"/>
+		/// </summary>
+		public bool MobileHideStatusBar;
 
-		public string iOSSDKVersionUsed; // PlayerSettings.iOS.sdkVersion
-		public string iOSTargetOSVersion; // PlayerSettings.iOS.targetOSVersion
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.accelerometerFrequency"/>
+		/// </summary>
+		public int MobileAccelerometerFrequency;
 
-		public string iOSTargetDevice; // PlayerSettings.iOS.targetDevice
-		public string iOSTargetResolution; // PlayerSettings.iOS.targetResolution. Removed in Unity 5.3
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.defaultInterfaceOrientation"/>
+		/// </summary>
+		public string MobileDefaultOrientationUsed;
 
-		public bool iOSIsIconPrerendered; // PlayerSettings.iOS.prerenderedIcon
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.allowedAutorotateToPortrait"/>
+		/// </summary>
+		public bool MobileEnableAutorotateToPortrait;
 
-		public string iOSRequiresPersistentWiFi; // PlayerSettings.iOS.requiresPersistentWiFi
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.allowedAutorotateToPortraitUpsideDown"/>
+		/// </summary>
+		public bool MobileEnableAutorotateToReversePortrait;
 
-		public string iOSStatusBarStyle; // PlayerSettings.iOS.statusBarStyle
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.allowedAutorotateToLandscapeLeft"/>
+		/// </summary>
+		public bool MobileEnableAutorotateToLandscapeLeft;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.allowedAutorotateToLandscapeRight"/>
+		/// </summary>
+		public bool MobileEnableAutorotateToLandscapeRight;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.useAnimatedAutorotation"/>
+		/// Formerly named UnityEditor.PlayerSettings.useOSAutorotation
+		/// </summary>
+		public bool MobileEnableOSAutorotation;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.muteOtherAudioSources"/>
+		/// Added in Unity 5.5
+		/// </summary>
+		public bool MuteOtherAudioSources;
 
 
-		// Unity 5: PlayerSettings.iOS.exitOnSuspend is replaced with PlayerSettings.iOS.appInBackgroundBehavior
-		public bool iOSExitOnSuspend; // PlayerSettings.iOS.exitOnSuspend
-
-		public string
-			iOSAppInBackgroundBehavior; // PlayerSettings.iOS.appInBackgroundBehavior (undocumented as of Unity 5.0.0f4)
-
-
-		public bool iOSLogObjCUncaughtExceptions; // PlayerSettings.logObjCUncaughtExceptions
-
-
-		public string iOSShowProgressBarInLoadingScreen; // PlayerSettings.iOS.showActivityIndicatorOnLoading
-
-		public string iOSTargetGraphics; // PlayerSettings.targetIOSGraphics. Removed in Unity 5.3
-
-
-		// Android only build settings
+		// iOS-only Build Settings
 		// ---------------------------------------------------------------
 
-		public string AndroidBuildSubtarget; // EditorUserBuildSettings.androidBuildSubtarget
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.iOS.applicationDisplayName"/>
+		/// </summary>
+		public string iOSAppDisplayName;
 
-		public bool AndroidUseAPKExpansionFiles; // PlayerSettings.Android.useAPKExpansionFiles
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.iOS.scriptCallOptimization"/>
+		/// </summary>
+		public string iOSScriptCallOptimizationUsed;
 
-		public bool AndroidAsAndroidProject; // EditorUserBuildSettings.exportAsGoogleAndroidProject
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.iOS.sdkVersion"/>
+		/// </summary>
+		public string iOSSDKVersionUsed;
 
-		public bool AndroidUseLicenseVerification; // PlayerSettings.Android.licenseVerification
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.iOS.targetOSVersion"/>
+		/// </summary>
+		public string iOSTargetOSVersion;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.iOS.targetDevice"/>
+		/// </summary>
+		public string iOSTargetDevice;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.iOS.targetResolution"/>
+		/// Removed in Unity 5.3
+		/// </summary>
+		public string iOSTargetResolution;
+
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.iOSXcodeBuildConfig"/>
+		/// Added in Unity 2021.2
+		/// </summary>
+		public string iOSXcodeBuildConfig;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.iOS.prerenderedIcon"/>
+		/// </summary>
+		public bool iOSIsIconPrerendered;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.iOS.requiresPersistentWiFi"/>
+		/// </summary>
+		public string iOSRequiresPersistentWiFi;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.iOS.statusBarStyle"/>
+		/// </summary>
+		public string iOSStatusBarStyle;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.iOS.appInBackgroundBehavior"/>
+		/// Formerly <see cref="UnityEditor.PlayerSettings.iOS.exitOnSuspend"/> in Unity 4.
+		/// </summary>
+		public bool iOSExitOnSuspend;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.iOS.appInBackgroundBehavior"/>
+		/// undocumented as of Unity 5.0.0f4
+		/// </summary>
+		public string iOSAppInBackgroundBehavior;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.logObjCUncaughtExceptions"/>
+		/// </summary>
+		public bool iOSLogObjCUncaughtExceptions;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.iOS.showActivityIndicatorOnLoading"/>
+		/// </summary>
+		public string iOSShowProgressBarInLoadingScreen;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.targetIOSGraphics"/>
+		/// Removed in Unity 5.3
+		/// </summary>
+		public string iOSTargetGraphics;
 
 
-		public bool AndroidIsGame; // Unity 5: PlayerSettings.Android.androidIsGame
-		public bool AndroidTvCompatible; // Unity 5: PlayerSettings.Android.androidTVCompatibility
-
-
-		// Unity 5: PlayerSettings.Android.use24BitDepthBuffer is replaced with PlayerSettings.Android.disableDepthAndStencilBuffers
-		public bool AndroidUse24BitDepthBuffer; // PlayerSettings.Android.use24BitDepthBuffer
-		public bool AndroidDisableDepthAndStencilBuffers; // PlayerSettings.Android.disableDepthAndStencilBuffers
-
-
-		public int AndroidVersionCode; // PlayerSettings.Android.bundleVersionCode
-
-		public string AndroidMinSDKVersion; // PlayerSettings.Android.minSdkVersion
-		public string AndroidTargetDevice; // PlayerSettings.Android.targetDevice
-
-		public string AndroidSplashScreenScaleMode; // PlayerSettings.Android.splashScreenScale
-
-		public string AndroidPreferredInstallLocation; // PlayerSettings.Android.preferredInstallLocation
-
-		public bool AndroidForceInternetPermission; // PlayerSettings.Android.forceInternetPermission
-		public bool AndroidForceSDCardPermission; // PlayerSettings.Android.forceSDCardPermission
-
-		public string AndroidShowProgressBarInLoadingScreen; // PlayerSettings.Android.showActivityIndicatorOnLoading
-
-		public string AndroidKeyAliasName; // PlayerSettings.Android.keyaliasName
-		public string AndroidKeystoreName; // PlayerSettings.Android.keystoreName
-
-
-		// BlackBerry only build settings
+		// Android-only Build Settings
 		// ---------------------------------------------------------------
 
-		public string BlackBerryBuildSubtarget; // EditorUserBuildSettings.blackberryBuildSubtarget
-		public string BlackBerryBuildType; // EditorUserBuildSettings.blackberryBuildType
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.androidBuildSubtarget"/>
+		/// </summary>
+		public string AndroidBuildSubtarget;
 
-		// Unity 5: PlayerSettings.BlackBerry.authorId removed
-		public string BlackBerryAuthorID; // PlayerSettings.BlackBerry.authorId
-		public string BlackBerryDeviceAddress; // PlayerSettings.BlackBerry.deviceAddress
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.androidCreateSymbols"/>
+		/// Added in Unity 2021.1
+		/// </summary>
+		public string AndroidCreateSymbols;
 
-		public string BlackBerrySaveLogPath; // PlayerSettings.BlackBerry.saveLogPath
-		public string BlackBerryTokenPath; // PlayerSettings.BlackBerry.tokenPath
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.buildApkPerCpuArchitecture"/>
+		/// Added in Unity 2018.2
+		/// </summary>
+		public bool AndroidBuildApkPerCpuArch;
 
-		public string BlackBerryTokenAuthor; // PlayerSettings.BlackBerry.tokenAuthor
-		public string BlackBerryTokenExpiration; // PlayerSettings.BlackBerry.tokenExpires
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.useAPKExpansionFiles"/>
+		/// </summary>
+		public bool AndroidUseAPKExpansionFiles;
 
-		public bool BlackBerryHasCamPermissions; // PlayerSettings.BlackBerry.HasCameraPermissions()
-		public bool BlackBerryHasMicPermissions; // PlayerSettings.BlackBerry.HasMicrophonePermissions()
-		public bool BlackBerryHasGpsPermissions; // PlayerSettings.BlackBerry.HasGPSPermissions()
-		public bool BlackBerryHasIdPermissions; // PlayerSettings.BlackBerry.HasIdentificationPermissions()
-		public bool BlackBerryHasSharedPermissions; // PlayerSettings.BlackBerry.HasSharedPermissions()
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.exportAsGoogleAndroidProject"/>
+		/// </summary>
+		public bool AndroidAsAndroidProject;
+
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.buildAppBundle"/>
+		/// Added in Unity 2017.4
+		/// </summary>
+		public bool AndroidAppBundle;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.licenseVerification"/>
+		/// </summary>
+		public bool AndroidUseLicenseVerification;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.enableArmv9SecurityFeatures"/>
+		/// Added in Unity 2022.2
+		/// </summary>
+		public bool AndroidEnableArmV9SecurityFeatures;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.androidIsGame"/>
+		/// Added in Unity 5
+		/// </summary>
+		public bool AndroidIsGame;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.androidTVCompatibility"/>
+		/// Added in Unity 5
+		/// </summary>
+		public bool AndroidTvCompatible;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.use24BitDepthBuffer"/>
+		/// Replaced in Unity 5 with <see cref="UnityEditor.PlayerSettings.Android.disableDepthAndStencilBuffers"/>
+		/// </summary>
+		public bool AndroidUse24BitDepthBuffer;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.disableDepthAndStencilBuffers"/>
+		/// </summary>
+		public bool AndroidDisableDepthAndStencilBuffers;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.preserveFramebufferAlpha"/>
+		/// Added in Unity 2017.3
+		/// </summary>
+		public bool AndroidPreserveFramebufferAlpha;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.bundleVersionCode"/>
+		/// </summary>
+		public int AndroidVersionCode;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.minSdkVersion"/>
+		/// </summary>
+		public string AndroidMinSDKVersion;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.targetSdkVersion"/>
+		/// Added in Unity 5.6
+		/// </summary>
+		public string AndroidTargetSDKVersion;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.androidTargetDevices"/>
+		/// Formerly <see cref="UnityEditor.PlayerSettings.Android.targetDevice"/>
+		/// </summary>
+		public string AndroidTargetDevice;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.targetArchitectures"/>
+		/// Added in Unity 2017.4
+		/// </summary>
+		public string AndroidTargetArchitectures;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.splashScreenScale"/>
+		/// </summary>
+		public string AndroidSplashScreenScaleMode;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.preferredInstallLocation"/>
+		/// </summary>
+		public string AndroidPreferredInstallLocation;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.forceInternetPermission"/>
+		/// </summary>
+		public bool AndroidForceInternetPermission;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.forceSDCardPermission"/>
+		/// </summary>
+		public bool AndroidForceSDCardPermission;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.showActivityIndicatorOnLoading"/>
+		/// </summary>
+		public string AndroidShowProgressBarInLoadingScreen;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.keyaliasName"/>
+		/// </summary>
+		public string AndroidKeyAliasName;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.Android.keystoreName"/>
+		/// </summary>
+		public string AndroidKeystoreName;
 
 
-		// XBox 360 build settings
+		// XBox One Build Settings
 		// ---------------------------------------------------------------
 
-		public string Xbox360BuildSubtarget; // EditorUserBuildSettings.xboxBuildSubtarget
-		public string Xbox360RunMethod; // EditorUserBuildSettings.xboxRunMethod
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.xboxOneDeployMethod"/>
+		/// </summary>
+		public string XboxOneDeployMethod;
 
-		public string Xbox360TitleId; // PlayerSettings.xboxTitleId
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.XboxOne.TitleId"/>
+		/// </summary>
+		public string XboxOneTitleId;
 
-		public string Xbox360ImageXexFilePath; // PlayerSettings.xboxImageXexFilePath
-		public string Xbox360SpaFilePath; // PlayerSettings.xboxSpaFilePath
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.XboxOne.ContentId"/>
+		/// </summary>
+		public string XboxOneContentId;
 
-		public bool Xbox360AutoGenerateSpa; // PlayerSettings.xboxGenerateSpa
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.XboxOne.ProductId"/>
+		/// </summary>
+		public string XboxOneProductId;
 
-		public bool Xbox360EnableKinect; // PlayerSettings.xboxEnableKinect
-		public bool Xbox360EnableKinectAutoTracking; // PlayerSettings.xboxEnableKinectAutoTracking
-		public bool Xbox360EnableSpeech; // PlayerSettings.xboxEnableSpeech
-		public bool Xbox360EnableAvatar; // PlayerSettings.xboxEnableAvatar
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.XboxOne.SandboxId"/>
+		/// </summary>
+		public string XboxOneSandboxId;
 
-		public uint Xbox360SpeechDB; // PlayerSettings.xboxSpeechDB
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.XboxOne.SCID"/>
+		/// </summary>
+		public string XboxOneServiceConfigId;
 
-		public int Xbox360AdditionalTitleMemSize; // PlayerSettings.xboxAdditionalTitleMemorySize
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.XboxOne.Version"/>
+		/// </summary>
+		public string XboxOneVersion;
 
-		public bool Xbox360DeployKinectResources; // PlayerSettings.xboxDeployKinectResources
-		public bool Xbox360DeployKinectHeadOrientation; // PlayerSettings.xboxDeployKinectHeadOrientation
-		public bool Xbox360DeployKinectHeadPosition; // PlayerSettings.xboxDeployKinectHeadPosition
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.XboxOne.IsContentPackage"/>
+		/// </summary>
+		public bool XboxOneIsContentPackage;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.XboxOne.Description"/>
+		/// </summary>
+		public string XboxOneDescription;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.XboxOne.PackagingEncryption"/>
+		/// </summary>
+		public string XboxOnePackagingEncryptionLevel;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.XboxOne.AllowedProductIds"/>
+		/// </summary>
+		public string[] XboxOneAllowedProductIds;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.XboxOne.DisableKinectGpuReservation"/>
+		/// </summary>
+		public bool XboxOneDisableKinectGpuReservation;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.XboxOne.EnableVariableGPU"/>
+		/// </summary>
+		public bool XboxOneEnableVariableGPU;
+
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.streamingInstallLaunchRange"/>
+		/// </summary>
+		public int XboxOneStreamingInstallLaunchRange;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.XboxOne.PersistentLocalStorageSize"/>
+		/// </summary>
+		public uint XboxOnePersistentLocalStorageSize;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.XboxOne.SocketNames"/>
+		/// </summary>
+		public string[] XboxOneSocketNames;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.XboxOne.GameOsOverridePath"/>
+		/// </summary>
+		public string XboxOneGameOsOverridePath;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.XboxOne.AppManifestOverridePath"/>
+		/// </summary>
+		public string XboxOneAppManifestOverridePath;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.XboxOne.PackagingOverridePath"/>
+		/// </summary>
+		public string XboxOnePackagingOverridePath;
 
 
-		// XBox One build settings
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.needSubmissionMaterials"/>
+		/// Used in PS3, but don't know which other Playstation platforms it also applies to.
+		/// </summary>
+		public bool NeedSubmissionMaterials;
+
+
+		// PS4 Build Settings
 		// ---------------------------------------------------------------
 
-		public string XboxOneDeployMethod; // EditorUserBuildSettings.xboxOneDeployMethod
-		public string XboxOneTitleId; // PlayerSettings.XboxOne.TitleId
-		public string XboxOneContentId; // PlayerSettings.XboxOne.ContentId
-		public string XboxOneProductId; // PlayerSettings.XboxOne.ProductId
-		public string XboxOneSandboxId; // PlayerSettings.XboxOne.SandboxId
-		public string XboxOneServiceConfigId; // PlayerSettings.XboxOne.SCID
-		public string XboxOneVersion; // PlayerSettings.XboxOne.Version
-		public bool XboxOneIsContentPackage; // PlayerSettings.XboxOne.IsContentPackage
+		/// <summary>
+		/// <see cref="UnityEditor.EditorUserBuildSettings.ps4BuildSubtarget"/>
+		/// </summary>
+		public string PS4BuildSubtarget;
 
-		public string XboxOneDescription; // PlayerSettings.XboxOne.Description
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.applicationParameter1"/>
+		/// </summary>
+		public int PS4AppParameter1;
 
-		public string XboxOnePackagingEncryptionLevel; // PlayerSettings.XboxOne.PackagingEncryption
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.applicationParameter2"/>
+		/// </summary>
+		public int PS4AppParameter2;
 
-		public string[] XboxOneAllowedProductIds; // PlayerSettings.XboxOne.AllowedProductIds
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.applicationParameter3"/>
+		/// </summary>
+		public int PS4AppParameter3;
 
-		public bool XboxOneDisableKinectGpuReservation; // PlayerSettings.XboxOne.DisableKinectGpuReservation
-		public bool XboxOneEnableVariableGPU; // PlayerSettings.XboxOne.EnableVariableGPU
-		public int XboxOneStreamingInstallLaunchRange; // EditorUserBuildSettings.streamingInstallLaunchRange
-		public uint XboxOnePersistentLocalStorageSize; // PlayerSettings.XboxOne.PersistentLocalStorageSize
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.applicationParameter4"/>
+		/// </summary>
+		public int PS4AppParameter4;
 
-		public string[] XboxOneSocketNames; // PlayerSettings.XboxOne.SocketNames
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.appType"/>
+		/// </summary>
+		public int PS4AppType;
 
-		public string XboxOneGameOsOverridePath; // PlayerSettings.XboxOne.GameOsOverridePath
-		public string XboxOneAppManifestOverridePath; // PlayerSettings.XboxOne.AppManifestOverridePath
-		public string XboxOnePackagingOverridePath; // PlayerSettings.XboxOne.PackagingOverridePath
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.appVersion"/>
+		/// </summary>
+		public string PS4AppVersion;
 
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.category"/>
+		/// </summary>
+		public string PS4Category;
 
-		// used in PS3, but don't know which other Playstation platforms it also applies to
-		public bool CompressBuildWithPsArc; // EditorUserBuildSettings.compressWithPsArc
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.contentID"/>
+		/// </summary>
+		public string PS4ContentId;
 
-		public bool NeedSubmissionMaterials; // EditorUserBuildSettings.needSubmissionMaterials
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.masterVersion"/>
+		/// </summary>
+		public string PS4MasterVersion;
 
-		// PS3 build settings
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.enterButtonAssignment"/>
+		/// </summary>
+		public string PS4EnterButtonAssignment;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.remotePlayKeyAssignment"/>
+		/// </summary>
+		public string PS4RemotePlayKeyAssignment;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.videoOutPixelFormat"/>
+		/// </summary>
+		public string PS4VideoOutPixelFormat;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.videoOutResolution"/>
+		/// </summary>
+		public string PS4VideoOutResolution;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.monoEnv"/>
+		/// </summary>
+		public string PS4MonoEnvVars;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.npAgeRating"/>
+		/// </summary>
+		public string PS4NpAgeRating;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.parentalLevel"/>
+		/// </summary>
+		public string PS4ParentalLevel;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.playerPrefsSupport"/>
+		/// </summary>
+		public bool PS4EnablePlayerPrefsSupport;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.pnFriends"/>
+		/// </summary>
+		public bool PS4EnableFriendPushNotifications;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.pnPresence"/>
+		/// </summary>
+		public bool PS4EnablePresencePushNotifications;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.pnSessions"/>
+		/// </summary>
+		public bool PS4EnableSessionPushNotifications;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.pnGameCustomData"/>
+		/// </summary>
+		public bool PS4EnableGameCustomDataPushNotifications;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.BackgroundImagePath"/>
+		/// </summary>
+		public string PS4BgImagePath;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.BGMPath"/>
+		/// </summary>
+		public string PS4BgMusicPath;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.StartupImagePath"/>
+		/// </summary>
+		public string PS4StartupImagePath;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.paramSfxPath"/>
+		/// </summary>
+		public string PS4ParamSfxPath;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.NPtitleDatPath"/>
+		/// </summary>
+		public string PS4NpTitleDatPath;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.npTrophyPackPath"/>
+		/// </summary>
+		public string PS4NpTrophyPackagePath;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.PronunciationSIGPath"/>
+		/// </summary>
+		public string PS4PronunciationSigPath;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.PronunciationXMLPath"/>
+		/// </summary>
+		public string PS4PronunciationXmlPath;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.SaveDataImagePath"/>
+		/// </summary>
+		public string PS4SaveDataImagePath;
+
+		/// <summary>
+		/// <see cref="UnityEditor.PlayerSettings.PS4.ShareFilePath"/>
+		/// </summary>
+		public string PS4ShareFilePath;
+
 		// ---------------------------------------------------------------
-
-
-		public string SCEBuildSubtarget; // EditorUserBuildSettings.sceBuildSubtarget
-
-		// paths
-		public string PS3TitleConfigFilePath; // PlayerSettings.ps3TitleConfigPath
-		public string PS3DLCConfigFilePath; // PlayerSettings.ps3DLCConfigPath
-		public string PS3ThumbnailFilePath; // PlayerSettings.ps3ThumbnailPath
-		public string PS3BackgroundImageFilePath; // PlayerSettings.ps3BackgroundPath
-		public string PS3BackgroundSoundFilePath; // PlayerSettings.ps3SoundPath
-		public string PS3TrophyPackagePath; // PlayerSettings.ps3TrophyPackagePath
-
-		public bool PS3InTrialMode; // PlayerSettings.ps3TrialMode
-		public bool PS3DisableDolbyEncoding; // Unity 5: PlayerSettings.PS3.DisableDolbyEncoding
-		public bool PS3EnableMoveSupport; // Unity 5: PlayerSettings.PS3.EnableMoveSupport
-		public bool PS3UseSPUForUmbra; // Unity 5: PlayerSettings.PS3.UseSPUForUmbra
-		public bool PS3EnableVerboseMemoryStats; // Unity 5: PlayerSettings.PS3.EnableVerboseMemoryStats
-
-		public int PS3VideoMemoryForAudio; // Unity 5: PlayerSettings.PS3.videoMemoryForAudio
-		public int PS3VideoMemoryForVertexBuffers; // PlayerSettings.PS3.videoMemoryForVertexBuffers
-		public int PS3BootCheckMaxSaveGameSizeKB; // PlayerSettings.ps3BootCheckMaxSaveGameSizeKB
-
-		public int PS3SaveGameSlots; // PlayerSettings.ps3SaveGameSlots
-
-		public string PS3NpCommsId; // PlayerSettings.ps3TrophyCommId
-		public string PS3NpCommsSig; // PlayerSettings.ps3TrophyCommSig
-		public int PS3NpAgeRating; // Unity 5: PlayerSettings.PS3.npAgeRating
-
-
-		// PS4 build settings
-		// ---------------------------------------------------------------
-
-		public string PS4BuildSubtarget; // EditorUserBuildSettings.ps4BuildSubtarget
-
-		public int PS4AppParameter1; // PlayerSettings.PS4.applicationParameter1
-		public int PS4AppParameter2; // PlayerSettings.PS4.applicationParameter2
-		public int PS4AppParameter3; // PlayerSettings.PS4.applicationParameter3
-		public int PS4AppParameter4; // PlayerSettings.PS4.applicationParameter4
-
-		public int PS4AppType; // PlayerSettings.PS4.appType
-		public string PS4AppVersion; // PlayerSettings.PS4.appVersion
-		public string PS4Category; // PlayerSettings.PS4.category
-		public string PS4ContentId; // PlayerSettings.PS4.contentID
-		public string PS4MasterVersion; // PlayerSettings.PS4.masterVersion
-
-		public string PS4EnterButtonAssignment; // PlayerSettings.PS4.enterButtonAssignment
-		public string PS4RemotePlayKeyAssignment; // PlayerSettings.PS4.remotePlayKeyAssignment
-
-		public string PS4VideoOutPixelFormat; // PlayerSettings.PS4.videoOutPixelFormat
-		public string PS4VideoOutResolution; // PlayerSettings.PS4.videoOutResolution
-
-		public string PS4MonoEnvVars; // PlayerSettings.PS4.monoEnv
-
-		public string PS4NpAgeRating; // PlayerSettings.PS4.npAgeRating
-		public string PS4ParentalLevel; // PlayerSettings.PS4.parentalLevel
-
-		public bool PS4EnablePlayerPrefsSupport; // PlayerSettings.PS4.playerPrefsSupport
-
-		public bool PS4EnableFriendPushNotifications; // PlayerSettings.PS4.pnFriends
-		public bool PS4EnablePresencePushNotifications; // PlayerSettings.PS4.pnPresence
-		public bool PS4EnableSessionPushNotifications; // PlayerSettings.PS4.pnSessions
-		public bool PS4EnableGameCustomDataPushNotifications; // PlayerSettings.PS4.pnGameCustomData
-
-		// paths
-		public string PS4BgImagePath; // PlayerSettings.PS4.BackgroundImagePath
-		public string PS4BgMusicPath; // PlayerSettings.PS4.BGMPath
-		public string PS4StartupImagePath; // PlayerSettings.PS4.StartupImagePath
-		public string PS4ParamSfxPath; // PlayerSettings.PS4.paramSfxPath
-		public string PS4NpTitleDatPath; // PlayerSettings.PS4.NPtitleDatPath
-		public string PS4NpTrophyPackagePath; // PlayerSettings.PS4.npTrophyPackPath
-		public string PS4PronunciationSigPath; // PlayerSettings.PS4.PronunciationSIGPath
-		public string PS4PronunciationXmlPath; // PlayerSettings.PS4.PronunciationXMLPath
-		public string PS4SaveDataImagePath; // PlayerSettings.PS4.SaveDataImagePath
-		public string PS4ShareFilePath; // PlayerSettings.PS4.ShareFilePath
-
-
-		// PS Vita build settings
-		// ---------------------------------------------------------------
-
-		public string
-			PSVTrophyPackagePath; // PlayerSettings.psp2NPTrophyPackPath (Unity 5: PlayerSettings.PSVita.npTrophyPackPath)
-
-		public string PSVParamSfxPath; // PlayerSettings.psp2ParamSfxPath (Unity 5: PlayerSettings.PSVita.paramSfxPath)
-
-
-		public string PSVNpCommsId; // PlayerSettings.psp2NPCommsID (Unity 5: PlayerSettings.PSVita.npCommunicationsID)
-		public string PSVNpCommsSig; // PlayerSettings.psp2NPCommsSig (Unity 5: PlayerSettings.PSVita.npCommsSig)
-
-
-		// new values in Unity 5:
-
-		public string PSVBuildSubtarget; // EditorUserBuildSettings.psp2BuildSubtarget
-
-		public string PSVShortTitle; // PlayerSettings.PSVita.shortTitle
-		public string PSVAppVersion; // PlayerSettings.PSVita.appVersion
-		public string PSVMasterVersion; // PlayerSettings.PSVita.masterVersion
-		public string PSVAppCategory; // PlayerSettings.PSVita.category
-		public string PSVContentId; // PlayerSettings.PSVita.contentID
-
-		public string PSVNpAgeRating; // PlayerSettings.PSVita.npAgeRating
-		public string PSVParentalLevel; // PlayerSettings.PSVita.parentalLevel
-
-		public string PSVDrmType; // PlayerSettings.PSVita.drmType
-		public bool PSVUpgradable; // PlayerSettings.PSVita.upgradable
-		public string PSVTvBootMode; // PlayerSettings.PSVita.tvBootMode
-		public bool PSVAcquireBgm; // PlayerSettings.PSVita.acquireBGM
-		public bool PSVAllowTwitterDialog; // PlayerSettings.PSVita.AllowTwitterDialog
-
-		public string PSVMediaCapacity; // PlayerSettings.PSVita.mediaCapacity
-		public string PSVStorageType; // PlayerSettings.PSVita.storageType
-		public bool PSVTvDisableEmu; // PlayerSettings.PSVita.tvDisableEmu
-		public bool PSVNpSupportGbmOrGjp; // PlayerSettings.PSVita.npSupportGBMorGJP
-		public string PSVPowerMode; // PlayerSettings.PSVita.powerMode
-		public bool PSVUseLibLocation; // PlayerSettings.PSVita.useLibLocation
-
-		public bool PSVHealthWarning; // PlayerSettings.PSVita.healthWarning
-		public string PSVEnterButtonAssignment; // PlayerSettings.PSVita.enterButtonAssignment
-
-		public bool PSVInfoBarColor; // PlayerSettings.PSVita.infoBarColor
-		public bool PSVShowInfoBarOnStartup; // PlayerSettings.PSVita.infoBarOnStartup
-		public int PSVSaveDataQuota; // PlayerSettings.PSVita.saveDataQuota
-
-		// paths
-		public string PSVPatchChangeInfoPath; // PlayerSettings.PSVita.patchChangeInfoPath
-		public string PSVPatchOriginalPackPath; // PlayerSettings.PSVita.patchOriginalPackage
-		public string PSVKeystoneFilePath; // PlayerSettings.PSVita.keystoneFile
-		public string PSVLiveAreaBgImagePath; // PlayerSettings.PSVita.liveAreaBackroundPath
-		public string PSVLiveAreaGateImagePath; // PlayerSettings.PSVita.liveAreaGatePath
-		public string PSVCustomLiveAreaPath; // PlayerSettings.PSVita.liveAreaPath
-		public string PSVLiveAreaTrialPath; // PlayerSettings.PSVita.liveAreaTrialPath
-
-		public string PSVManualPath; // PlayerSettings.PSVita.manualPath
-
-
-		// Samsung TV build settings
-		// ---------------------------------------------------------------
-
-		public string SamsungTVDeviceAddress; // PlayerSettings.SamsungTV.deviceAddress
-		public string SamsungTVAuthor; // PlayerSettings.SamsungTV.productAuthor
-		public string SamsungTVAuthorEmail; // PlayerSettings.SamsungTV.productAuthorEmail
-		public string SamsungTVAuthorWebsiteUrl; // PlayerSettings.SamsungTV.productLink
-		public string SamsungTVCategory; // PlayerSettings.SamsungTV.productCategory
-		public string SamsungTVDescription; // PlayerSettings.SamsungTV.productDescription
-
 
 		[System.Serializable]
 		public struct PackageEntry
@@ -566,7 +1225,6 @@ namespace BuildReportTool
 
 		// Derived Values
 		// ---------------------------------------------------------------
-
 
 		public bool HasValues
 		{
