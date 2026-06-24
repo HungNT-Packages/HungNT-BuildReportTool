@@ -1,10 +1,12 @@
 {
-  "name": "com.hungnt.buildreporttool",
-  "version": "1.0.0",
-  "displayName": "HungNT: Build Report Tool",
+  "name": "com.hungnt.thirdparty.buildreporttool",
+  "version": "3.11.9",
+  "displayName": "HungNT 3rd-party: Build Report Tool",
+  "description": "Wrapper GitHub-only cho asset Build Report Tool (Anomalous Underdog).",
   "unity": "2021.1",
+  "documentationUrl": "https://assetstore.unity.com/packages/tools/utilities/build-report-tool-8162",
   "author": {
-    "name": "Nguyen Tien Hung",
-    "email": "ngtienhungg.work@gmail.com"
+    "name": "HungNT",
+    "url": "https://github.com/HungNT-UPM"
   }
 }
